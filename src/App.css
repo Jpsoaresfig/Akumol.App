@@ -1,42 +1,36 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Efeito de Vidro (Glassmorphism) sutil para os Cards */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Animação suave para os inputs */
+.input-field {
+  @apply w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none 
+         transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Botão Principal com sombra suave */
+.btn-primary {
+  @apply bg-indigo-600 text-white font-bold py-3 px-6 rounded-2xl 
+         hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 
+         active:scale-95 transition-all duration-200;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* Card de destaque do Agente */
+.agent-card-glow {
+  position: relative;
+  overflow: hidden;
 }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+.agent-card-glow::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.1) 0%, transparent 70%);
+  pointer-events: none;
 }

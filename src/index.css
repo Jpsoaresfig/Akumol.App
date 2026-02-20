@@ -1,68 +1,46 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@theme {
+  --color-brand-primary: #4f46e5;
+  --color-brand-bg: #f8fafc;
+  --color-brand-text: #0f172a;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer base {
+  body {
+    @apply bg-[family-name:--color-brand-bg] text-[family-name:--color-brand-text] antialiased;
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
-  a:hover {
-    color: #747bff;
+}
+
+@layer components {
+  /* Scrollbar Minimalista */
+  ::-webkit-scrollbar {
+    width: 6px;
   }
-  button {
-    background-color: #f9f9f9;
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+  }
+
+  /* Efeito de Vidro para os Cards do Dashboard */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl shadow-slate-200/50 rounded-[2.5rem];
+  }
+  
+  /* Inputs do Login e Registro */
+  .input-field {
+    @apply w-full px-4 py-3 rounded-2xl border border-slate-200 outline-none 
+           transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
+  }
+
+  /* Botões de Ação */
+  .btn-primary {
+    @apply bg-indigo-600 text-white font-bold py-3 px-6 rounded-2xl 
+           hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 
+           active:scale-95 transition-all duration-200 disabled:opacity-50;
   }
 }

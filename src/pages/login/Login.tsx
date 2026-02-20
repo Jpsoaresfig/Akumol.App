@@ -47,7 +47,7 @@ const LoginPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 border border-slate-100">
         <h2 className="text-3xl font-bold text-center text-slate-900 mb-8">
-          {isRegistering ? 'Criar Conta' : 'Liberdade IA'}
+          {isRegistering ? 'Criar Conta' : 'Akumol'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           {isRegistering && (
