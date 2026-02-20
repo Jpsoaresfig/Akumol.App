@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { auth, db } from '../api/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
-
-// IMPORTANTE: Use "type" para estas importações
 import type { User } from 'firebase/auth';
 import type { UserProfile } from '../types';
+
+
 export const useAuth = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -13,10 +13,8 @@ export const useAuth = () => {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser: User | null) => {
       if (firebaseUser) {
-        // Referência ao documento do usuário no Firestore
         const userRef = doc(db, "users", firebaseUser.uid);
         
-        // Monitoramento em tempo real para refletir mudanças de plano instantaneamente
         const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
           if (docSnap.exists()) {
             setUser({
@@ -37,5 +35,31 @@ export const useAuth = () => {
     return () => unsubscribeAuth();
   }, []);
 
-  return { user, loading };
+  /**
+   * Envia e-mail de recuperação de senha via Firebase Auth
+   */
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (error: unknown) { // Alterado de any para unknown para segurança
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao resetar senha";
+      console.error("Erro ao resetar senha:", errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  /**
+   * Encerra a sessão do usuário
+   */
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao sair";
+      console.error(errorMessage);
+    }
+  };
+
+  return { user, loading, logout, resetPassword };
 };
