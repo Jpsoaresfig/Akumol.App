@@ -1,29 +1,40 @@
+// src/hooks/useAuth.ts
 import { useState, useEffect } from 'react';
-import { auth, db, userConverter } from '../api/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { UserProfile } from '../types';
+import { auth, db } from '../api/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
+
+// Importações de tipo obrigatórias com "type"
+import type { User } from 'firebase/auth';
+import type { UserProfile } from '../types';
 
 export const useAuth = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser: User | null) => {
       if (firebaseUser) {
-        const userRef = doc(db, "users", firebaseUser.uid).withConverter(userConverter);
-        const userSnap = await getDoc(userRef);
+        const userRef = doc(db, "users", firebaseUser.uid);
         
-        if (userSnap.exists()) {
-          setUser(userSnap.data());
-        }
+        const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setUser({
+              uid: firebaseUser.uid,
+              ...docSnap.data()
+            } as UserProfile);
+          }
+          setLoading(false);
+        });
+
+        return () => unsubscribeDoc();
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, []);
 
   return { user, loading };
