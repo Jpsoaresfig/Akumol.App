@@ -1,9 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import AdminPanel from './pages/Admin';
-import Dashboard from './pages/Dashboard';
-import DashboardBasic from './pages/plans/basic/DashboardBasic'; // <-- Importação do novo Dashboard
 import LoginPage from './pages/login/Login';
+
+// --- IMPORTAÇÃO DOS DASHBOARDS DE CADA PLANO ---
+import DashboardBasic from './pages/plans/basic/DashboardBasic'; 
+import DashboardPremium from './pages/plans/premium/DashboardPremium';
+import DashboardPlus from './pages/plans/plus/DashboardPlus';
+import DashboardUltimate from './pages/plans/ultimate/DashboardUltimate';
 
 // --- PÁGINAS TEMPORÁRIAS DOS AGENTES (ROADMAP) ---
 
@@ -59,14 +63,17 @@ function App() {
           } 
         />
 
-        {/* ROTA PROTEGIDA: Dashboard (Separa Basic dos restantes) */}
+        {/* ROTA PROTEGIDA PRINCIPAL: Separação Automática por Plano */}
         <Route 
           path="/" 
           element={
             !user ? <Navigate to="/login" replace /> :
             user.role === 'admin' ? <Navigate to="/admin" replace /> : 
-            user.plan === 'basic' ? <DashboardBasic /> : // <-- Condição adicionada!
-            <Dashboard />
+            user.plan === 'basic' ? <DashboardBasic /> :
+            user.plan === 'premium' ? <DashboardPremium /> :
+            user.plan === 'plus' ? <DashboardPlus /> :
+            user.plan === 'ultimate' ? <DashboardUltimate /> :
+            <DashboardBasic /> /* Fallback de segurança: se o utilizador bugar e não tiver plano, cai no Basic */
           } 
         />
         
