@@ -8,7 +8,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../api/firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, AlertCircle } from 'lucide-react'; // Ícones para feedback visual
+import { Loader2, AlertCircle } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -16,7 +16,6 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   
-  // Novos estados para melhorar a experiência do utilizador
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [resetMsg, setResetMsg] = useState('');
@@ -32,11 +31,9 @@ const LoginPage: React.FC = () => {
 
     try {
       if (isRegistering) {
-        // Fluxo de Registo
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
         
-        // Criação do documento do utilizador com os dados necessários para o Dashboard
         await setDoc(doc(db, "users", userCredential.user.uid), {
           uid: userCredential.user.uid,
           displayName: name,
@@ -54,22 +51,16 @@ const LoginPage: React.FC = () => {
             weatherAutoSave: false
           }
         });
-        navigate('/'); // Redireciona para o Dashboard
+        navigate('/');
       } else {
-        // Fluxo de Login
         await signInWithEmailAndPassword(auth, email, password);
-        navigate('/'); // Redireciona para o Dashboard
+        navigate('/');
       }
-    
-    // CORREÇÃO: Usando 'unknown' em vez de 'any' para satisfazer o TypeScript
     } catch (error: unknown) {
       console.error("Erro Auth:", error);
       let mensagem = "Ocorreu um erro inesperado. Tente novamente.";
-      
-      // Verificação segura (Type Guard) para ler o código de erro do Firebase
       if (typeof error === 'object' && error !== null && 'code' in error) {
         const errorCode = (error as { code: string }).code;
-        
         if (errorCode === 'auth/invalid-credential' || errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password') {
           mensagem = "E-mail ou senha incorretos.";
         } else if (errorCode === 'auth/email-already-in-use') {
@@ -78,7 +69,6 @@ const LoginPage: React.FC = () => {
           mensagem = "A senha deve ter pelo menos 6 caracteres.";
         }
       }
-      
       setErrorMsg(mensagem);
     } finally {
       setIsLoading(false);
@@ -108,20 +98,28 @@ const LoginPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 p-4 font-sans transition-colors duration-300">
       <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none p-8 border border-slate-100 dark:border-slate-800 transition-colors duration-300">
         
-        {/* Cabeçalho */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-indigo-600 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-indigo-200 dark:shadow-none">
-            <span className="text-white text-2xl font-black tracking-tighter">AI</span>
+          {/* Container da Logo com Alternância de Tema */}
+          <div className="w-20 h-20 mx-auto mb-4 drop-shadow-sm">
+            <img 
+              src="src\img\Logo_branca_Akumol.png" 
+              alt="Akumol" 
+              className="block dark:hidden w-full h-full object-contain"
+            />
+            <img 
+              src="src\img\logo_preta_Akumol.png" 
+              alt="Akumol" 
+              className="hidden dark:block w-full h-full object-contain"
+            />
           </div>
           <h2 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
-            {isRegistering ? 'Criar Conta' : 'Liberdade IA'}
+            {isRegistering ? 'Criar Conta' : 'AKUMOL'}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">
             {isRegistering ? 'Inicie a sua jornada financeira' : 'O seu Guardião Digital aguarda'}
           </p>
         </div>
 
-        {/* Mensagens de Alerta */}
         {errorMsg && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 flex items-start gap-3 rounded-2xl border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-medium">
             <AlertCircle size={18} className="shrink-0 mt-0.5" />
@@ -134,7 +132,6 @@ const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {/* Formulário */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {isRegistering && (
             <div>
@@ -187,7 +184,6 @@ const LoginPage: React.FC = () => {
           </button>
         </form>
 
-        {/* Links Inferiores */}
         <div className="mt-8 flex flex-col items-center space-y-4">
           {!isRegistering && (
             <button 
@@ -217,7 +213,6 @@ const LoginPage: React.FC = () => {
               : 'Não tem conta? Cadastre-se gratuitamente'}
           </button>
         </div>
-
       </div>
     </div>
   );

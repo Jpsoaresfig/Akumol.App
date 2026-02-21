@@ -21,13 +21,11 @@ const AdminDashboard: React.FC = () => {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   
-  // Estado para controlar o tema
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     return savedTheme === 'dark';
   });
 
-  // Efeito do Dark Mode
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -40,7 +38,6 @@ const AdminDashboard: React.FC = () => {
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
-  // Busca todos os usuários no Firebase
   const fetchUsers = useCallback(async () => {
     try {
       setLoadingUsers(true);
@@ -62,12 +59,11 @@ const AdminDashboard: React.FC = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  // Função para mudar o plano de um usuário
   const updatePlan = async (userId: string, newPlan: PlanLevel) => {
     try {
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, { plan: newPlan });
-      await fetchUsers(); // Recarrega a lista para mostrar a mudança
+      await fetchUsers();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       alert("Falha ao atualizar plano: " + errorMessage);
@@ -84,8 +80,6 @@ const AdminDashboard: React.FC = () => {
   }
 
   const userName = user?.displayName ? user.displayName.split(' ')[0] : 'Admin';
-  
-  // Cálculos de Métricas Globais para o Admin
   const totalUsers = allUsers.length;
   const globalHoursSaved = allUsers.reduce((acc, curr) => acc + (curr.financialData?.hoursSaved || 0), 0);
   const premiumUsers = allUsers.filter(u => u.plan !== 'basic').length;
@@ -93,15 +87,29 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 p-4 md:p-8 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
       
-      {/* HEADER DO ADMIN */}
       <header className="max-w-7xl mx-auto flex justify-between items-center mb-10">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">Central de Comando, {userName}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest">
-              NÍVEL DEUS (ADMIN)
-            </span>
-            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium italic">Monitoramento Global da Plataforma</p>
+        <div className="flex items-center gap-4">
+          {/* Logo no Header do Dashboard */}
+          <div className="w-12 h-12">
+            <img 
+              src="/logo_clara.png" 
+              alt="Logo" 
+              className="block dark:hidden w-full h-full object-contain"
+            />
+            <img 
+              src="/logo_escura.png" 
+              alt="Logo" 
+              className="hidden dark:block w-full h-full object-contain"
+            />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">Central de Comando, {userName}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest">
+                NÍVEL DEUS (ADMIN)
+              </span>
+              <p className="text-slate-500 dark:text-slate-400 text-xs font-medium italic">Monitoramento Global da Plataforma</p>
+            </div>
           </div>
         </div>
         
@@ -122,10 +130,7 @@ const AdminDashboard: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto space-y-6">
-        
-        {/* CARDS DE MÉTRICAS GLOBAIS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Total de Usuários */}
           <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm transition-colors duration-300">
             <div className="flex justify-between items-start mb-6">
               <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-2xl"><Users size={24} /></div>
@@ -135,7 +140,6 @@ const AdminDashboard: React.FC = () => {
             <p className="text-4xl font-black text-slate-800 dark:text-white mt-1">{totalUsers}</p>
           </div>
 
-          {/* Card 2: Horas Globais Salvas */}
           <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm transition-colors duration-300 relative overflow-hidden">
             <div className="relative z-10">
               <div className="flex justify-between items-start mb-6">
@@ -148,7 +152,6 @@ const AdminDashboard: React.FC = () => {
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 dark:bg-green-900/10 rounded-full -mr-10 -mt-10 z-0"></div>
           </div>
 
-          {/* Card 3: Assinantes Premium */}
           <div className="bg-indigo-600 dark:bg-indigo-900/80 p-6 rounded-[2rem] text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-colors duration-300">
             <div className="flex justify-between items-start mb-6">
               <div className="p-3 bg-white/20 rounded-2xl"><Crown size={24} className="text-white" /></div>
@@ -162,7 +165,6 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* TABELA DE GESTÃO DE USUÁRIOS */}
         <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden transition-colors duration-300">
           <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
             <Activity className="text-indigo-500" />
@@ -217,19 +219,10 @@ const AdminDashboard: React.FC = () => {
                     </td>
                   </tr>
                 ))}
-                
-                {allUsers.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="py-8 text-center text-slate-400 dark:text-slate-500 text-sm font-medium">
-                      Nenhum utilizador encontrado na base de dados.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
         </div>
-
       </main>
     </div>
   );
