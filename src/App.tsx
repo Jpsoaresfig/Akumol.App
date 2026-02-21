@@ -4,23 +4,40 @@ import AdminPanel from './pages/Admin';
 import Dashboard from './pages/Dashboard';
 import LoginPage from './pages/login/Login';
 
-// Componente temporário para o Agente Sombra até criarmos a página específica
+// --- PÁGINAS TEMPORÁRIAS DOS AGENTES (ROADMAP) ---
+
 const SombraPage = () => (
-  <div className="p-8">
-    <h1 className="text-2xl font-bold">Agente Sombra</h1>
-    <p>Varredura de extrato em busca de gastos ocultos...</p>
+  <div className="p-8 min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <h1 className="text-2xl font-bold text-red-500">Agente Sombra (Premium)</h1>
+    <p>Varredura de extrato em busca de gastos ocultos e assinaturas inúteis...</p>
   </div>
 );
+
+const HerancaPage = () => (
+  <div className="p-8 min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <h1 className="text-2xl font-bold text-green-500">Arquiteto de Herança (Plus Pro)</h1>
+    <p>Convertendo centavos e arredondamentos em tempo real de aposentadoria...</p>
+  </div>
+);
+
+const ManadaPage = () => (
+  <div className="p-8 min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+    <h1 className="text-2xl font-bold text-indigo-500">Efeito Manada (Ultimate Elite)</h1>
+    <p>Missões semanais em grupo, ranking comunitário e táticas de economia chinesa...</p>
+  </div>
+);
+
+// --- COMPONENTE PRINCIPAL ---
 
 function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
         <div className="flex flex-col items-center">
           <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <div className="text-indigo-600 font-black animate-pulse tracking-tighter">
+          <div className="text-indigo-600 dark:text-indigo-400 font-black animate-pulse tracking-tighter">
             CARREGANDO GUARDIÃO DIGITAL...
           </div>
         </div>
@@ -31,25 +48,35 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rota Pública: Se já estiver logado, manda para o Dashboard automaticamente */}
+        
+        {/* ROTA PÚBLICA: Redirecionamento de Login */}
         <Route 
           path="/login" 
-          element={!user ? <LoginPage /> : <Navigate to="/" replace />} 
+          element={
+            !user ? <LoginPage /> : 
+            <Navigate to={user.role === 'admin' ? "/admin" : "/"} replace />
+          } 
         />
 
-        {/* Rota Protegida: Dashboard Principal */}
+        {/* ROTA PROTEGIDA: Dashboard (Visão Geral do Utilizador) */}
         <Route 
           path="/" 
-          element={user ? <Dashboard /> : <Navigate to="/login" replace />} 
+          element={
+            !user ? <Navigate to="/login" replace /> :
+            user.role === 'admin' ? <Navigate to="/admin" replace /> : 
+            <Dashboard />
+          } 
         />
         
-        {/* Rota de Admin: Apenas usuários com role 'admin' */}
+        {/* ROTA PROTEGIDA: Central de Comando (Admin) */}
         <Route 
           path="/admin" 
           element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} 
         />
 
-        {/* Rota do Agente Sombra: Proteção por nível de plano */}
+        {/* ROTAS PROTEGIDAS: Agentes de IA (Verificação Estrita de Planos) */}
+        
+        {/* Agente Sombra requer Premium, Plus ou Ultimate */}
         <Route 
           path="/sombra" 
           element={
@@ -59,11 +86,34 @@ function App() {
           } 
         />
 
-        {/* AJUSTE AQUI: Redireciona rota desconhecida de forma inteligente */}
+        {/* Arquiteto de Herança requer Plus ou Ultimate */}
+        <Route 
+          path="/heranca" 
+          element={
+            user && ['plus', 'ultimate'].includes(user.plan) 
+              ? <HerancaPage /> 
+              : <Navigate to="/" replace />
+          } 
+        />
+
+        {/* Efeito Manada requer estritamente o Ultimate */}
+        <Route 
+          path="/manada" 
+          element={
+            user && ['ultimate'].includes(user.plan) 
+              ? <ManadaPage /> 
+              : <Navigate to="/" replace />
+          } 
+        />
+
+        {/* FALLBACK: Captura rotas inválidas e resolve para o local certo */}
         <Route 
           path="*" 
-          element={<Navigate to={user ? "/" : "/login"} replace />} 
+          element={
+            <Navigate to={!user ? "/login" : user.role === 'admin' ? "/admin" : "/"} replace />
+          } 
         />
+        
       </Routes>
     </BrowserRouter>
   );

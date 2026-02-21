@@ -61,17 +61,24 @@ const LoginPage: React.FC = () => {
         navigate('/'); // Redireciona para o Dashboard
       }
     
-    } catch (error: any) {
+    // CORREÇÃO: Usando 'unknown' em vez de 'any' para satisfazer o TypeScript
+    } catch (error: unknown) {
       console.error("Erro Auth:", error);
-      // Tratamento de erros mais amigável
       let mensagem = "Ocorreu um erro inesperado. Tente novamente.";
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        mensagem = "E-mail ou senha incorretos.";
-      } else if (error.code === 'auth/email-already-in-use') {
-        mensagem = "Este e-mail já está cadastrado.";
-      } else if (error.code === 'auth/weak-password') {
-        mensagem = "A senha deve ter pelo menos 6 caracteres.";
+      
+      // Verificação segura (Type Guard) para ler o código de erro do Firebase
+      if (typeof error === 'object' && error !== null && 'code' in error) {
+        const errorCode = (error as { code: string }).code;
+        
+        if (errorCode === 'auth/invalid-credential' || errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password') {
+          mensagem = "E-mail ou senha incorretos.";
+        } else if (errorCode === 'auth/email-already-in-use') {
+          mensagem = "Este e-mail já está cadastrado.";
+        } else if (errorCode === 'auth/weak-password') {
+          mensagem = "A senha deve ter pelo menos 6 caracteres.";
+        }
       }
+      
       setErrorMsg(mensagem);
     } finally {
       setIsLoading(false);
@@ -98,31 +105,31 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] p-4 font-sans">
-      <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
+    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 p-4 font-sans transition-colors duration-300">
+      <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none p-8 border border-slate-100 dark:border-slate-800 transition-colors duration-300">
         
         {/* Cabeçalho */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-indigo-600 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-indigo-200">
+          <div className="w-16 h-16 bg-indigo-600 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-indigo-200 dark:shadow-none">
             <span className="text-white text-2xl font-black tracking-tighter">AI</span>
           </div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-800">
+          <h2 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
             {isRegistering ? 'Criar Conta' : 'Liberdade IA'}
           </h2>
-          <p className="text-slate-500 mt-2 text-sm font-medium">
+          <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">
             {isRegistering ? 'Inicie a sua jornada financeira' : 'O seu Guardião Digital aguarda'}
           </p>
         </div>
 
         {/* Mensagens de Alerta */}
         {errorMsg && (
-          <div className="mb-6 p-4 bg-red-50 flex items-start gap-3 rounded-2xl border border-red-100 text-red-600 text-sm font-medium">
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 flex items-start gap-3 rounded-2xl border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-medium">
             <AlertCircle size={18} className="shrink-0 mt-0.5" />
             <p>{errorMsg}</p>
           </div>
         )}
         {resetMsg && (
-          <div className="mb-6 p-4 bg-green-50 rounded-2xl border border-green-100 text-green-700 text-sm font-medium text-center">
+          <div className="mb-6 p-4 bg-green-50 dark:bg-green-500/10 rounded-2xl border border-green-100 dark:border-green-900/50 text-green-700 dark:text-green-400 text-sm font-medium text-center">
             {resetMsg}
           </div>
         )}
@@ -135,7 +142,7 @@ const LoginPage: React.FC = () => {
                 type="text"
                 placeholder="Nome completo"
                 disabled={isLoading}
-                className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all disabled:opacity-50"
+                className="input-field"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -148,7 +155,7 @@ const LoginPage: React.FC = () => {
               type="email"
               placeholder="E-mail"
               disabled={isLoading}
-              className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all disabled:opacity-50"
+              className="input-field"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -160,7 +167,7 @@ const LoginPage: React.FC = () => {
               type="password"
               placeholder="Senha"
               disabled={isLoading}
-              className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all disabled:opacity-50"
+              className="input-field"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -170,7 +177,7 @@ const LoginPage: React.FC = () => {
           <button 
             type="submit" 
             disabled={isLoading}
-            className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+            className="btn-primary w-full flex items-center justify-center mt-2"
           >
             {isLoading ? (
               <Loader2 className="animate-spin" size={24} />
@@ -187,13 +194,13 @@ const LoginPage: React.FC = () => {
               type="button" 
               onClick={handleResetPassword} 
               disabled={isLoading}
-              className="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors disabled:opacity-50"
+              className="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors disabled:opacity-50"
             >
               Esqueci a minha senha
             </button>
           )}
           
-          <div className="w-full h-px bg-slate-100"></div>
+          <div className="w-full h-px bg-slate-100 dark:bg-slate-800"></div>
 
           <button 
             type="button"
@@ -203,7 +210,7 @@ const LoginPage: React.FC = () => {
               setResetMsg('');
             }} 
             disabled={isLoading}
-            className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors disabled:opacity-50"
+            className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors disabled:opacity-50"
           >
             {isRegistering 
               ? 'Já tem uma conta? Faça login aqui' 
