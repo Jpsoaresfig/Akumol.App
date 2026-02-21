@@ -7,6 +7,7 @@ import {
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../api/firebase';
 import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom'; // Necessário para redirecionar
 
 const LoginPage: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -14,6 +15,7 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const { resetPassword } = useAuth();
+  const navigate = useNavigate(); // Hook para navegação
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,6 +24,7 @@ const LoginPage: React.FC = () => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
         
+        // CORREÇÃO: Estrutura de dados deve seguir a interface UserProfile
         await setDoc(doc(db, "users", userCredential.user.uid), {
           uid: userCredential.user.uid,
           displayName: name,
@@ -29,15 +32,23 @@ const LoginPage: React.FC = () => {
           plan: 'basic',
           role: 'user',
           createdAt: serverTimestamp(),
-          savingsRatio: 0,
-          hoursSaved: 0
+          financialData: { // Objeto obrigatório para o Dashboard
+            hoursSaved: 0,
+            savingsRatio: 0,
+            totalInvested: 0
+          },
+          preferences: { // Objeto obrigatório para o Dashboard
+            dopamineMode: true,
+            weatherAutoSave: false
+          }
         });
+        navigate('/dashboard'); // Redireciona após o cadastro
       } else {
         await signInWithEmailAndPassword(auth, email, password);
+        navigate('/dashboard'); // Redireciona após o login
       }
     
-    } catch (error: unknown) { // Alterado de any para unknown
-      // Verificação de tipo para garantir segurança e remover o aviso do linter
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido";
       alert("Erro na autenticação: " + errorMessage);
     }
@@ -82,11 +93,19 @@ const LoginPage: React.FC = () => {
         </form>
         <div className="mt-6 text-center space-y-2">
           {!isRegistering && (
-            <button onClick={() => email ? resetPassword(email) : alert("Insira seu e-mail")} className="text-sm text-indigo-600 hover:underline block w-full">
+            <button 
+              type="button" // Evita o submit acidental do form
+              onClick={() => email ? resetPassword(email) : alert("Insira seu e-mail")} 
+              className="text-sm text-indigo-600 hover:underline block w-full"
+            >
               Esqueceu a senha?
             </button>
           )}
-          <button onClick={() => setIsRegistering(!isRegistering)} className="text-sm text-slate-500">
+          <button 
+            type="button"
+            onClick={() => setIsRegistering(!isRegistering)} 
+            className="text-sm text-slate-500"
+          >
             {isRegistering ? 'Já tem conta? Entre' : 'Não tem conta? Cadastre-se'}
           </button>
         </div>
