@@ -17,9 +17,12 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-indigo-600 font-bold animate-pulse">
-          Carregando Guardião Digital...
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <div className="text-indigo-600 font-black animate-pulse tracking-tighter">
+            CARREGANDO GUARDIÃO DIGITAL...
+          </div>
         </div>
       </div>
     );
@@ -28,22 +31,22 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rota Pública: Se já estiver logado, manda para o Dashboard */}
+        {/* Rota Pública: Se já estiver logado, manda para o Dashboard automaticamente */}
         <Route 
           path="/login" 
-          element={!user ? <LoginPage /> : <Navigate to="/" />} 
+          element={!user ? <LoginPage /> : <Navigate to="/" replace />} 
         />
 
         {/* Rota Protegida: Dashboard Principal */}
         <Route 
           path="/" 
-          element={user ? <Dashboard /> : <Navigate to="/login" />} 
+          element={user ? <Dashboard /> : <Navigate to="/login" replace />} 
         />
         
         {/* Rota de Admin: Apenas usuários com role 'admin' */}
         <Route 
           path="/admin" 
-          element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" />} 
+          element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} 
         />
 
         {/* Rota do Agente Sombra: Proteção por nível de plano */}
@@ -52,12 +55,15 @@ function App() {
           element={
             user && ['premium', 'plus', 'ultimate'].includes(user.plan) 
               ? <SombraPage /> 
-              : <Navigate to="/" />
+              : <Navigate to="/" replace />
           } 
         />
 
-        {/* Redireciona qualquer rota desconhecida para o Dashboard */}
-        <Route path="*" element={<Navigate to="/" />} />
+        {/* AJUSTE AQUI: Redireciona rota desconhecida de forma inteligente */}
+        <Route 
+          path="*" 
+          element={<Navigate to={user ? "/" : "/login"} replace />} 
+        />
       </Routes>
     </BrowserRouter>
   );
