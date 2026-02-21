@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import AdminPanel from './pages/Admin';
 import Dashboard from './pages/Dashboard';
+import DashboardBasic from './pages/plans/basic/DashboardBasic'; // <-- Importação do novo Dashboard
 import LoginPage from './pages/login/Login';
 
 // --- PÁGINAS TEMPORÁRIAS DOS AGENTES (ROADMAP) ---
@@ -58,12 +59,13 @@ function App() {
           } 
         />
 
-        {/* ROTA PROTEGIDA: Dashboard (Visão Geral do Utilizador) */}
+        {/* ROTA PROTEGIDA: Dashboard (Separa Basic dos restantes) */}
         <Route 
           path="/" 
           element={
             !user ? <Navigate to="/login" replace /> :
             user.role === 'admin' ? <Navigate to="/admin" replace /> : 
+            user.plan === 'basic' ? <DashboardBasic /> : // <-- Condição adicionada!
             <Dashboard />
           } 
         />

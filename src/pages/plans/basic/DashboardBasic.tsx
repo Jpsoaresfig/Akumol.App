@@ -13,10 +13,10 @@ import {
   CreditCard
 } from 'lucide-react';
 
-const Dashboard: React.FC = () => {
+const DashboardBasic: React.FC = () => {
   const { user, logout, loading } = useAuth();
   
-  // Controle de Tema (Dark Mode)
+  // Controlo de Tema (Dark Mode)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark';
   });
@@ -43,18 +43,17 @@ const Dashboard: React.FC = () => {
   }
 
   const userName = user?.displayName ? user.displayName.split(' ')[0] : 'Investidor';
-  const isBasic = user?.plan === 'basic';
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 p-4 md:p-8 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
       
-      {/* HEADER DO UTILIZADOR */}
+      {/* CABEÇALHO DO UTILIZADOR */}
       <header className="max-w-7xl mx-auto flex justify-between items-center mb-10">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">Olá, {userName}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="bg-slate-800 dark:bg-slate-700 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest shadow-sm">
-              PLANO {user?.plan || 'BASIC'}
+              PLANO BÁSICO
             </span>
             <p className="text-slate-500 dark:text-slate-400 text-xs font-medium italic">Unidade de Intervenção Ativa</p>
           </div>
@@ -69,7 +68,7 @@ const Dashboard: React.FC = () => {
           </button>
           <button 
             onClick={logout}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-300 p-3 rounded-2xl hover:text-red-500 dark:hover:text-red-400 hover:border-red-100 dark:hover:border-red-900/50 transition-all shadow-sm"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-300 p-3 rounded-2xl hover:text-red-500 dark:hover:text-red-400 transition-all shadow-sm"
           >
             <LogOut size={20} />
           </button>
@@ -81,60 +80,56 @@ const Dashboard: React.FC = () => {
         {/* COLUNA ESQUERDA */}
         <div className="lg:col-span-8 space-y-6">
           
-          {/* RECURSO ATIVO (BASIC): MONITORAMENTO DE CARTÕES */}
+          {/* RECURSO ATIVO (BASIC): MONITORIZAÇÃO DE CARTÕES */}
           <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden transition-colors duration-300">
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-4 text-indigo-600 dark:text-indigo-400">
                 <CreditCard size={18} />
-                <span className="text-xs font-black uppercase tracking-widest">Monitoramento Open Banking</span>
+                <span className="text-xs font-black uppercase tracking-widest">Monitorização Open Banking</span>
               </div>
               <h2 className="text-slate-800 dark:text-white font-black text-3xl tracking-tight">Análise de Gastos Ativa</h2>
               <p className="text-slate-500 dark:text-slate-400 mt-4 max-w-md text-sm leading-relaxed font-medium">
-                Conecte a sua conta bancária para que a Inteligência Artificial comece a mapear o seu padrão de consumo em tempo real.
+                Ligue a sua conta bancária para que a Inteligência Artificial comece a mapear o seu padrão de consumo em tempo real.
               </p>
               <button className="mt-8 bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-none">
-                Conectar Conta Bancária
+                Ligar Conta Bancária
               </button>
             </div>
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 dark:bg-indigo-900/10 rounded-full -mr-20 -mt-20 z-0 opacity-60"></div>
           </div>
 
-          {/* GRID DE RECURSOS BLOQUEADOS (UPSELL) */}
+          {/* GRELHA DE RECURSOS BLOQUEADOS (UPSELL) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* AGENTE SOMBRA (Premium) */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-6 rounded-[2rem] relative overflow-hidden group">
-              {isBasic && (
-                <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center transition-all group-hover:backdrop-blur-sm">
-                  <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-slate-400 mb-3">
-                    <Lock size={20} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow-sm">
-                    Requer Premium
-                  </span>
+            <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] relative overflow-hidden group">
+              <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center transition-all group-hover:backdrop-blur-sm">
+                <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-slate-400 dark:text-slate-300 mb-3">
+                  <Lock size={20} />
                 </div>
-              )}
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-sm">
+                  Desbloquear Premium
+                </span>
+              </div>
               <div className="flex justify-between items-start mb-6 opacity-40">
                 <div className="p-3 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-2xl"><Zap size={24} /></div>
                 <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Agente Sombra</span>
               </div>
-              <h3 className="font-bold text-slate-800 dark:text-white text-sm opacity-40">Vazamentos Ocultos</h3>
+              <h3 className="font-bold text-slate-800 dark:text-white text-sm opacity-40">Fugas de Dinheiro</h3>
               <p className="text-2xl font-black text-slate-800 dark:text-white mt-1 opacity-40">R$ ???,??</p>
               <p className="text-xs text-slate-400 mt-2 font-medium opacity-40">Varredura de assinaturas inúteis.</p>
             </div>
 
             {/* ARQUITETO DE HERANÇA (Plus Pro) */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-6 rounded-[2rem] relative overflow-hidden group">
-              {isBasic && (
-                <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center transition-all group-hover:backdrop-blur-sm">
-                  <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-slate-400 mb-3">
-                    <Lock size={20} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow-sm">
-                    Requer Plus Pro
-                  </span>
+            <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] relative overflow-hidden group">
+              <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center transition-all group-hover:backdrop-blur-sm">
+                <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-slate-400 dark:text-slate-300 mb-3">
+                  <Lock size={20} />
                 </div>
-              )}
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-sm">
+                  Desbloquear Plus Pro
+                </span>
+              </div>
               <div className="flex justify-between items-start mb-6 opacity-40">
                 <div className="p-3 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-2xl"><TrendingUp size={24} /></div>
                 <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Multiplicação</span>
@@ -164,7 +159,7 @@ const Dashboard: React.FC = () => {
             <div className="mt-6 flex gap-2">
               <input 
                 type="text" 
-                placeholder="https://shopee.com..." 
+                placeholder="https://amazon.com..." 
                 className="w-full bg-indigo-500/50 dark:bg-indigo-800/50 border border-indigo-400/30 dark:border-indigo-700/50 rounded-xl px-4 py-3 text-sm outline-none focus:bg-indigo-500 dark:focus:bg-indigo-700 transition-all placeholder:text-indigo-300 dark:placeholder:text-indigo-400"
               />
               <button className="bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 p-3 rounded-xl hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors">
@@ -174,22 +169,20 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* RECURSO BLOQUEADO: EFEITO MANADA (Ultimate) */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-6 rounded-[2rem] relative overflow-hidden group">
-            {isBasic && (
-              <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center transition-all group-hover:backdrop-blur-sm">
-                <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-slate-400 mb-3">
-                  <Lock size={20} />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow-sm">
-                  Requer Ultimate Elite
-                </span>
+          <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] relative overflow-hidden group">
+            <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center transition-all group-hover:backdrop-blur-sm">
+              <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-slate-400 dark:text-slate-300 mb-3">
+                <Lock size={20} />
               </div>
-            )}
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-sm">
+                Desbloquear Ultimate Elite
+              </span>
+            </div>
             <div className="flex items-center gap-2 mb-4 opacity-40">
               <Users size={18} className="text-slate-500" />
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Psicologia Chinesa</span>
             </div>
-            <h3 className="font-bold text-slate-800 dark:text-white text-sm opacity-40">Missão de Equipe (Efeito Manada)</h3>
+            <h3 className="font-bold text-slate-800 dark:text-white text-sm opacity-40">Missão de Equipa (Efeito Manada)</h3>
             <div className="flex -space-x-2 mt-4 opacity-40">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-700 bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-[10px] text-slate-500 font-bold">U{i}</div>
@@ -203,4 +196,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard;
+export default DashboardBasic;
