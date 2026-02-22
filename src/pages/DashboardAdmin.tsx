@@ -131,7 +131,7 @@ const AdminDashboard: React.FC = () => {
 
       <main className="max-w-7xl mx-auto space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm transition-colors duration-300">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-4xl shadow-sm transition-colors duration-300">
             <div className="flex justify-between items-start mb-6">
               <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-2xl"><Users size={24} /></div>
               <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Base de Dados</span>
@@ -140,7 +140,7 @@ const AdminDashboard: React.FC = () => {
             <p className="text-4xl font-black text-slate-800 dark:text-white mt-1">{totalUsers}</p>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm transition-colors duration-300 relative overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-4xl shadow-sm transition-colors duration-300 relative overflow-hidden">
             <div className="relative z-10">
               <div className="flex justify-between items-start mb-6">
                 <div className="p-3 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-2xl"><Target size={24} /></div>
@@ -152,7 +152,7 @@ const AdminDashboard: React.FC = () => {
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 dark:bg-green-900/10 rounded-full -mr-10 -mt-10 z-0"></div>
           </div>
 
-          <div className="bg-indigo-600 dark:bg-indigo-900/80 p-6 rounded-[2rem] text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-colors duration-300">
+          <div className="bg-indigo-600 dark:bg-indigo-900/80 p-6 rounded-4xl text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-colors duration-300">
             <div className="flex justify-between items-start mb-6">
               <div className="p-3 bg-white/20 rounded-2xl"><Crown size={24} className="text-white" /></div>
               <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Conversão</span>

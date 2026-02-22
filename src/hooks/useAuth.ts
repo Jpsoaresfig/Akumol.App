@@ -5,6 +5,7 @@ import {
   signOut, 
   sendPasswordResetEmail 
 } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app'; // Importação correta aqui
 import { doc, onSnapshot } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import type { UserProfile } from '../types';
@@ -20,7 +21,6 @@ export const useAuth = () => {
       if (firebaseUser) {
         const userRef = doc(db, "users", firebaseUser.uid);
         
-        // Escuta mudanças no documento do usuário em tempo real
         unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
           if (docSnap.exists()) {
             setUser({
@@ -37,7 +37,6 @@ export const useAuth = () => {
           setLoading(false);
         });
       } else {
-        // Se sair do Firebase Auth, limpa o estado e a escuta do Firestore
         if (unsubscribeDoc) unsubscribeDoc();
         setUser(null);
         setLoading(false);
@@ -55,17 +54,18 @@ export const useAuth = () => {
    */
   const resetPassword = async (email: string) => {
     try {
-      // Usando o fluxo simplificado (configurações padrão do console Firebase)
       await sendPasswordResetEmail(auth, email);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) { 
       let errorMessage = "Erro ao enviar e-mail de recuperação.";
       
-      // Mapeamento de erros comuns do Firebase
-      const errorCode = error?.code;
-      if (errorCode === 'auth/user-not-found') errorMessage = "Utilizador não encontrado.";
-      if (errorCode === 'auth/too-many-requests') errorMessage = "Muitas solicitações. Tente mais tarde.";
-      if (errorCode === 'auth/invalid-email') errorMessage = "E-mail inválido.";
+      // Agora o instanceof funcionará corretamente
+      if (error instanceof FirebaseError) {
+        const errorCode = error.code;
+        if (errorCode === 'auth/user-not-found') errorMessage = "Utilizador não encontrado.";
+        if (errorCode === 'auth/too-many-requests') errorMessage = "Muitas solicitações. Tente mais tarde.";
+        if (errorCode === 'auth/invalid-email') errorMessage = "E-mail inválido.";
+      }
       
       console.error("Erro resetPassword:", error);
       return { success: false, error: errorMessage };
