@@ -14,49 +14,58 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let unsubscribeDoc: (() => void) | undefined;
+
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser: User | null) => {
       if (firebaseUser) {
         const userRef = doc(db, "users", firebaseUser.uid);
-        const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
+        
+        // Escuta mudanças no documento do usuário em tempo real
+        unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
           if (docSnap.exists()) {
             setUser({
               uid: firebaseUser.uid,
               ...docSnap.data()
             } as UserProfile);
+          } else {
+            console.warn("Documento do usuário não encontrado no Firestore.");
+            setUser(null);
           }
           setLoading(false);
+        }, (error) => {
+          console.error("Erro ao escutar documento do usuário:", error);
+          setLoading(false);
         });
-        return () => unsubscribeDoc();
       } else {
+        // Se sair do Firebase Auth, limpa o estado e a escuta do Firestore
+        if (unsubscribeDoc) unsubscribeDoc();
         setUser(null);
         setLoading(false);
       }
     });
-    return () => unsubscribeAuth();
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeDoc) unsubscribeDoc();
+    };
   }, []);
 
   /**
-   * Envia e-mail de recuperação de senha com configurações de redirecionamento.
+   * Envia e-mail de recuperação de senha.
    */
   const resetPassword = async (email: string) => {
     try {
-      // Define para onde o utilizador volta após redefinir a senha
-      const actionCodeSettings = {
-        url: window.location.origin + '/login',
-        handleCodeInApp: true,
-      };
-
-      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      // Usando o fluxo simplificado (configurações padrão do console Firebase)
+      await sendPasswordResetEmail(auth, email);
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
       let errorMessage = "Erro ao enviar e-mail de recuperação.";
       
-      if (typeof error === 'object' && error !== null && 'code' in error) {
-        const errorCode = (error as { code: string }).code;
-        if (errorCode === 'auth/user-not-found') errorMessage = "Utilizador não encontrado.";
-        if (errorCode === 'auth/too-many-requests') errorMessage = "Muitas solicitações. Tente mais tarde.";
-        if (errorCode === 'auth/invalid-email') errorMessage = "E-mail inválido.";
-      }
+      // Mapeamento de erros comuns do Firebase
+      const errorCode = error?.code;
+      if (errorCode === 'auth/user-not-found') errorMessage = "Utilizador não encontrado.";
+      if (errorCode === 'auth/too-many-requests') errorMessage = "Muitas solicitações. Tente mais tarde.";
+      if (errorCode === 'auth/invalid-email') errorMessage = "E-mail inválido.";
       
       console.error("Erro resetPassword:", error);
       return { success: false, error: errorMessage };
