@@ -2,12 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
-
-// --- IMPORTAÇÃO DOS DASHBOARDS DE CADA PLANO ---
-import DashboardBasic from './pages/plans/basic/DashboardBasic'; 
-import DashboardPremium from './pages/plans/premium/DashboardPremium';
-import DashboardPlus from './pages/plans/plus/DashboardPlus';
-import DashboardUltimate from './pages/plans/ultimate/DashboardUltimate';
+import Dashboard from './pages/Dashboard'; // Importação da nova tela centralizada
 
 // --- PÁGINAS TEMPORÁRIAS DOS AGENTES (ROADMAP) ---
 
@@ -35,7 +30,7 @@ const ManadaPage = () => (
 // --- COMPONENTE PRINCIPAL ---
 
 function App() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth(); // Busca estado de autenticação e carregamento
 
   if (loading) {
     return (
@@ -63,17 +58,13 @@ function App() {
           } 
         />
 
-        {/* ROTA PROTEGIDA PRINCIPAL: Separação Automática por Plano */}
+        {/* ROTA PROTEGIDA PRINCIPAL: Único ponto de entrada para utilizadores */}
         <Route 
           path="/" 
           element={
             !user ? <Navigate to="/login" replace /> :
             user.role === 'admin' ? <Navigate to="/admin" replace /> : 
-            user.plan === 'basic' ? <DashboardBasic /> :
-            user.plan === 'premium' ? <DashboardPremium /> :
-            user.plan === 'plus' ? <DashboardPlus /> :
-            user.plan === 'ultimate' ? <DashboardUltimate /> :
-            <DashboardBasic /> /* Fallback de segurança: se o utilizador bugar e não tiver plano, cai no Basic */
+            <Dashboard /> /* A tela Dashboard agora gere internamente o que mostrar por plano */
           } 
         />
         
@@ -85,7 +76,6 @@ function App() {
 
         {/* ROTAS PROTEGIDAS: Agentes de IA (Verificação Estrita de Planos) */}
         
-        {/* Agente Sombra requer Premium, Plus ou Ultimate */}
         <Route 
           path="/sombra" 
           element={
@@ -95,7 +85,6 @@ function App() {
           } 
         />
 
-        {/* Arquiteto de Herança requer Plus ou Ultimate */}
         <Route 
           path="/heranca" 
           element={
@@ -105,7 +94,6 @@ function App() {
           } 
         />
 
-        {/* Efeito Manada requer estritamente o Ultimate */}
         <Route 
           path="/manada" 
           element={
@@ -115,7 +103,7 @@ function App() {
           } 
         />
 
-        {/* FALLBACK: Captura rotas inválidas e resolve para o local certo */}
+        {/* FALLBACK: Redirecionamento global de segurança */}
         <Route 
           path="*" 
           element={

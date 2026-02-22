@@ -1,231 +1,159 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { db } from '../api/firebase';
-import { collection, query, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { 
-  ShieldCheck, 
-  Target, 
-  Users, 
-  LogOut, 
-  Sun,
-  Moon,
-  Activity,
-  Crown
+  ShieldCheck, Zap, TrendingUp, Users, LogOut, 
+  ArrowUpRight, Sun, Moon, Lock, CreditCard, Target, Crown 
 } from 'lucide-react';
-import type { UserProfile, PlanLevel } from '../types';
 
-const planLevels: PlanLevel[] = ['basic', 'premium', 'plus', 'ultimate'];
+// --- SUB-COMPONENTES DE CONTEÚDO ---
 
-const AdminDashboard: React.FC = () => {
+const SentinelaWidget = () => (
+  <div className="bg-indigo-600 dark:bg-indigo-900/80 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-colors duration-300">
+    <div className="flex items-center gap-2 mb-6">
+      <ShieldCheck size={20} className="text-indigo-200 dark:text-indigo-300" />
+      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 dark:text-indigo-300">Agente Sentinela</span>
+    </div>
+    <p className="text-2xl font-bold leading-tight tracking-tight">Filtro de 72h Ativo</p>
+    <div className="mt-6 flex gap-2">
+      <input type="text" placeholder="Link do produto..." className="w-full bg-indigo-500/50 dark:bg-indigo-800/50 border border-indigo-400/30 dark:border-indigo-700/50 rounded-xl px-4 py-3 text-sm outline-none placeholder:text-indigo-300" />
+      <button className="bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 p-3 rounded-xl hover:bg-indigo-50 transition-colors"><ArrowUpRight size={20} /></button>
+    </div>
+  </div>
+);
+
+const LockedWidget = ({ title, planName }: { title: string, planName: string }) => (
+  <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] relative overflow-hidden group">
+    <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center">
+      <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-slate-400 mb-3"><Lock size={20} /></div>
+      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-sm">
+        Desbloquear {planName}
+      </span>
+    </div>
+    <h3 className="font-bold text-slate-400 text-sm">{title}</h3>
+    <div className="h-20" /> {/* Espaçador para manter layout */}
+  </div>
+);
+
+// --- COMPONENTE PRINCIPAL ---
+
+const Dashboard: React.FC = () => {
   const { user, logout, loading } = useAuth();
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    return savedTheme === 'dark';
-  });
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+  if (loading) return (
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex flex-col items-center justify-center">
+      <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+      <p className="text-indigo-600 font-black animate-pulse">SINCRONIZANDO GUARDIÃO DIGITAL...</p>
+    </div>
+  );
 
-  const fetchUsers = useCallback(async () => {
-    try {
-      setLoadingUsers(true);
-      const q = query(collection(db, "users"));
-      const querySnapshot = await getDocs(q);
-      const userList = querySnapshot.docs.map(doc => ({ 
-        ...doc.data(),
-        uid: doc.id 
-      } as UserProfile));
-      setAllUsers(userList);
-    } catch (error) {
-      console.error("Erro ao buscar usuários:", error);
-    } finally {
-      setLoadingUsers(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  const updatePlan = async (userId: string, newPlan: PlanLevel) => {
-    try {
-      const userRef = doc(db, "users", userId);
-      await updateDoc(userRef, { plan: newPlan });
-      await fetchUsers();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-      alert("Falha ao atualizar plano: " + errorMessage);
-    }
-  };
-
-  if (loading || loadingUsers) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-300">
-        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-indigo-600 dark:text-indigo-400 font-black animate-pulse tracking-tighter">CARREGANDO CENTRAL DE COMANDO...</p>
-      </div>
-    );
-  }
-
-  const userName = user?.displayName ? user.displayName.split(' ')[0] : 'Admin';
-  const totalUsers = allUsers.length;
-  const globalHoursSaved = allUsers.reduce((acc, curr) => acc + (curr.financialData?.hoursSaved || 0), 0);
-  const premiumUsers = allUsers.filter(u => u.plan !== 'basic').length;
+  const plan = user?.plan || 'basic';
+  const userName = user?.displayName?.split(' ')[0] || 'Investidor';
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 p-4 md:p-8 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
       
+      {/* HEADER ÚNICO */}
       <header className="max-w-7xl mx-auto flex justify-between items-center mb-10">
-        <div className="flex items-center gap-4">
-          {/* Logo no Header do Dashboard */}
-          <div className="w-12 h-12">
-            <img 
-              src="/logo_clara.png" 
-              alt="Logo" 
-              className="block dark:hidden w-full h-full object-contain"
-            />
-            <img 
-              src="/logo_escura.png" 
-              alt="Logo" 
-              className="hidden dark:block w-full h-full object-contain"
-            />
-          </div>
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">Central de Comando, {userName}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest">
-                NÍVEL DEUS (ADMIN)
-              </span>
-              <p className="text-slate-500 dark:text-slate-400 text-xs font-medium italic">Monitoramento Global da Plataforma</p>
-            </div>
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">Olá, {userName}</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest shadow-sm text-white ${
+              plan === 'ultimate' ? 'bg-gradient-to-r from-amber-400 to-orange-500' :
+              plan === 'plus' ? 'bg-emerald-500' :
+              plan === 'premium' ? 'bg-purple-600' : 'bg-slate-800'
+            }`}>
+              {plan === 'ultimate' && <Crown size={10} className="inline mr-1" />}
+              PLANO {plan.toUpperCase()}
+            </span>
           </div>
         </div>
-        
         <div className="flex items-center gap-3">
-          <button 
-            onClick={toggleTheme}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-300 p-3 rounded-2xl hover:text-indigo-500 dark:hover:text-indigo-400 transition-all shadow-sm"
-          >
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-sm">
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
-          <button 
-            onClick={logout}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-300 p-3 rounded-2xl hover:text-red-500 dark:hover:text-red-400 transition-all shadow-sm"
-          >
+          <button onClick={logout} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-sm hover:text-red-500 transition-colors">
             <LogOut size={20} />
           </button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm transition-colors duration-300">
-            <div className="flex justify-between items-start mb-6">
-              <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-2xl"><Users size={24} /></div>
-              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Base de Dados</span>
-            </div>
-            <h3 className="font-bold text-slate-800 dark:text-white text-sm">Total de Usuários Ativos</h3>
-            <p className="text-4xl font-black text-slate-800 dark:text-white mt-1">{totalUsers}</p>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm transition-colors duration-300 relative overflow-hidden">
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-6">
-                <div className="p-3 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-2xl"><Target size={24} /></div>
-                <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Impacto Global</span>
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* COLUNA ESQUERDA: GESTÃO DE RECURSOS ATIVOS/BLOQUEADOS */}
+        <div className="lg:col-span-8 space-y-6">
+          
+          {/* 1. AGENTE SOMBRA / OPEN BANKING (Lógica Dinâmica) */}
+          {['premium', 'plus', 'ultimate'].includes(plan) ? (
+            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden">
+               <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-4 text-red-500"><Zap size={18} /><span className="text-xs font-black uppercase tracking-widest">Agente Sombra</span></div>
+                <h2 className="text-slate-800 dark:text-white font-black text-3xl tracking-tight">Vazamentos Ocultos</h2>
+                <p className="text-6xl font-black text-red-500 mt-2">R$ 142,90</p>
+                <button className="mt-8 bg-red-500 text-white font-bold py-3 px-8 rounded-xl text-sm shadow-lg shadow-red-500/30">Exterminar Gastos</button>
               </div>
-              <h3 className="font-bold text-slate-800 dark:text-white text-sm">Horas de Vida Devolvidas</h3>
-              <p className="text-4xl font-black text-slate-800 dark:text-white mt-1">{globalHoursSaved} <span className="text-xl text-slate-400">h</span></p>
+              <div className="absolute top-0 right-0 w-72 h-72 bg-red-50 dark:bg-red-900/10 rounded-full -mr-24 -mt-24 opacity-60"></div>
             </div>
-            <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 dark:bg-green-900/10 rounded-full -mr-10 -mt-10 z-0"></div>
-          </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm">
+              <div className="flex items-center gap-2 mb-4 text-indigo-600"><CreditCard size={18} /><span className="text-xs font-black uppercase tracking-widest">Monitorização</span></div>
+              <h2 className="text-slate-800 dark:text-white font-black text-3xl tracking-tight">Análise de Gastos</h2>
+              <p className="text-slate-500 dark:text-slate-400 mt-4 text-sm font-medium">Ligue a conta para mapear consumo.</p>
+              <button className="mt-8 bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl text-sm">Ligar Conta Bancária</button>
+            </div>
+          )}
 
-          <div className="bg-indigo-600 dark:bg-indigo-900/80 p-6 rounded-[2rem] text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-colors duration-300">
-            <div className="flex justify-between items-start mb-6">
-              <div className="p-3 bg-white/20 rounded-2xl"><Crown size={24} className="text-white" /></div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Conversão</span>
-            </div>
-            <h3 className="font-bold text-white text-sm">Assinantes Pagantes</h3>
-            <p className="text-4xl font-black text-white mt-1">{premiumUsers}</p>
-            <div className="w-full bg-indigo-800/50 h-1.5 rounded-full mt-4 overflow-hidden">
-              <div className="bg-white h-full" style={{ width: `${totalUsers > 0 ? (premiumUsers/totalUsers)*100 : 0}%` }}></div>
+          {/* 2. ARQUITETO DE HERANÇA (Lógica Dinâmica) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {['plus', 'ultimate'].includes(plan) ? (
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="p-3 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-2xl"><Target size={24} /></div>
+                  <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Herança</span>
+                </div>
+                <h3 className="font-bold text-slate-800 dark:text-white text-sm">Horas Salvas</h3>
+                <p className="text-4xl font-black text-slate-800 dark:text-white mt-1">{user?.financialData?.hoursSaved || 0}h</p>
+              </div>
+            ) : (
+              <LockedWidget title="Arquiteto de Herança" planName="Plus Pro" />
+            )}
+
+            {/* YU'E BAO (Disponível em quase todos) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm">
+              <div className="flex justify-between items-start mb-6">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl"><TrendingUp size={24} /></div>
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Rendimento</span>
+              </div>
+              <h3 className="font-bold text-slate-800 dark:text-white text-sm">Yu’e Bao Brasileiro</h3>
+              <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">R$ 42,30</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden transition-colors duration-300">
-          <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
-            <Activity className="text-indigo-500" />
-            <h2 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Gestão de Agentes e Planos</h2>
-          </div>
+        {/* COLUNA DIREITA */}
+        <div className="lg:col-span-4 space-y-6">
+          <SentinelaWidget />
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-widest">
-                <tr>
-                  <th className="py-4 px-8">Usuário</th>
-                  <th className="py-4 px-8">Plano Atual</th>
-                  <th className="py-4 px-8">Atribuir Nível</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {allUsers.map(u => (
-                  <tr key={u.uid} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                    <td className="py-5 px-8">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-sm uppercase">
-                          {u.displayName ? u.displayName.charAt(0) : 'U'}
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-700 dark:text-slate-200">{u.displayName || 'Sem nome'}</p>
-                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{u.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-5 px-8">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck size={16} className={u.plan === 'basic' ? 'text-slate-400' : 'text-indigo-500'} />
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                          {u.plan}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-5 px-8 flex flex-wrap gap-2">
-                      {planLevels.map(p => (
-                        <button 
-                          key={p}
-                          onClick={() => updatePlan(u.uid, p)}
-                          className={`text-[10px] px-4 py-2 rounded-xl font-bold uppercase tracking-wider transition-all ${
-                            u.plan === p 
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' 
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-500 dark:hover:text-white'
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* EFEITO MANADA (Exclusivo Ultimate) */}
+          {plan === 'ultimate' ? (
+            <div className="bg-gradient-to-br from-amber-400 to-orange-500 p-8 rounded-[2.5rem] text-white shadow-xl shadow-amber-200/50 transition-colors duration-300">
+              <div className="flex items-center gap-2 mb-4"><Users size={20} className="text-white" /><span className="text-[10px] font-black uppercase tracking-widest text-white/90">Efeito Manada</span></div>
+              <h3 className="text-2xl font-bold tracking-tight">Missão de Equipa</h3>
+              <p className="text-white/90 text-sm mt-2 font-medium">O seu grupo economizou 85% da meta semanal.</p>
+              <button className="mt-6 w-full py-3 bg-white text-amber-600 rounded-xl font-bold text-[10px] uppercase tracking-wider">Ranking Comunitário</button>
+            </div>
+          ) : (
+            <LockedWidget title="Missão de Equipa (Efeito Manada)" planName="Ultimate Elite" />
+          )}
         </div>
       </main>
     </div>
   );
 };
 
-export default AdminDashboard;
+export default Dashboard;
