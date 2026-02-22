@@ -10,6 +10,10 @@ import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle } from 'lucide-react';
 
+// Importação das logos como variáveis para garantir o processamento pelo Vite
+import logoClara from '../../img/Logo_branca_Akumol.png';
+import logoEscura from '../../img/logo_preta_Akumol.png';
+
 const LoginPage: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
@@ -31,6 +35,7 @@ const LoginPage: React.FC = () => {
 
     try {
       if (isRegistering) {
+        // Fluxo de Registo no Firebase
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
         
@@ -53,6 +58,7 @@ const LoginPage: React.FC = () => {
         });
         navigate('/');
       } else {
+        // Fluxo de Login no Firebase
         await signInWithEmailAndPassword(auth, email, password);
         navigate('/');
       }
@@ -99,20 +105,20 @@ const LoginPage: React.FC = () => {
       <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none p-8 border border-slate-100 dark:border-slate-800 transition-colors duration-300">
         
         <div className="text-center mb-8">
-          {/* Container da Logo com Alternância de Tema */}
+          {/* Container da Logo com Alternância Automática de Tema */}
           <div className="w-20 h-20 mx-auto mb-4 drop-shadow-sm">
             <img 
-              src="src\img\Logo_branca_Akumol.png" 
+              src={logoClara} 
               alt="Akumol" 
               className="block dark:hidden w-full h-full object-contain"
             />
             <img 
-              src="src\img\logo_preta_Akumol.png" 
+              src={logoEscura} 
               alt="Akumol" 
               className="hidden dark:block w-full h-full object-contain"
             />
           </div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
+          <h2 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white uppercase">
             {isRegistering ? 'Criar Conta' : 'AKUMOL'}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">
@@ -120,6 +126,7 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Mensagens de Feedback */}
         {errorMsg && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 flex items-start gap-3 rounded-2xl border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-medium">
             <AlertCircle size={18} className="shrink-0 mt-0.5" />

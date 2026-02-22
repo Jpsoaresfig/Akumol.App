@@ -12,7 +12,9 @@ import {
   Moon,
   Target,
   Activity,
-  ShieldCheck
+  ShieldCheck,
+  Search,
+  X
 } from 'lucide-react';
 import type { UserProfile, PlanLevel } from '../types';
 
@@ -22,8 +24,7 @@ const AdminPanel: React.FC = () => {
   const { logout, user } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
-  
-  // Estado para controlar a aba ativa ('overview' ou 'users')
+  const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'users'>('overview');
 
   // Controle de Tema (Dark Mode)
@@ -78,6 +79,16 @@ const AdminPanel: React.FC = () => {
     return () => { isMounted = false; };
   }, [fetchUsers]);
 
+  // Lógica de Filtragem de Usuários
+  const filteredUsers = users.filter(u => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      u.displayName?.toLowerCase().includes(searchLower) ||
+      u.email?.toLowerCase().includes(searchLower) ||
+      u.plan?.toLowerCase().includes(searchLower)
+    );
+  });
+
   // Cálculos de Métricas Globais
   const totalUsers = users.length;
   const globalHoursSaved = users.reduce((acc, curr) => acc + (curr.financialData?.hoursSaved || 0), 0);
@@ -99,7 +110,6 @@ const AdminPanel: React.FC = () => {
           </div>
 
           <nav className="p-4 space-y-2 mt-4">
-            {/* Botão: Visão Geral */}
             <button 
               onClick={() => setActiveTab('overview')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
@@ -112,7 +122,6 @@ const AdminPanel: React.FC = () => {
               <span>Visão Geral</span>
             </button>
 
-            {/* Botão: Gestão de Usuários */}
             <button 
               onClick={() => setActiveTab('users')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
@@ -125,7 +134,6 @@ const AdminPanel: React.FC = () => {
               <span>Gestão de Usuários</span>
             </button>
 
-            {/* Botão: Editar Planos (Em breve) */}
             <button 
               disabled
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 dark:text-slate-600 font-medium text-sm transition-all opacity-70 cursor-not-allowed"
@@ -155,7 +163,7 @@ const AdminPanel: React.FC = () => {
         </div>
       </aside>
 
-      {/* ÁREA PRINCIPAL (CONTEÚDO) */}
+      {/* ÁREA PRINCIPAL */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header className="md:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
           <span className="font-black text-lg tracking-tight">Admin<span className="text-red-500">IA</span></span>
@@ -165,16 +173,18 @@ const AdminPanel: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-5xl mx-auto space-y-8">
             
-            {/* Cabeçalho Dinâmico da Página */}
-            <div>
-              <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
-                {activeTab === 'overview' ? `Central de Comando, ${user?.displayName?.split(' ')[0] || 'Admin'}` : 'Gestão de Usuários'}
-              </h1>
-              <p className="text-slate-500 dark:text-slate-400 mt-1">
-                {activeTab === 'overview' 
-                  ? 'Monitoramento Global da Plataforma e impacto dos agentes.'
-                  : 'Controle quem tem acesso aos agentes e funcionalidades do Liberdade IA.'}
-              </p>
+            {/* Cabeçalho Dinâmico */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
+                  {activeTab === 'overview' ? `Central de Comando, ${user?.displayName?.split(' ')[0] || 'Admin'}` : 'Gestão de Usuários'}
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400 mt-1">
+                  {activeTab === 'overview' 
+                    ? 'Monitoramento Global da Plataforma e impacto dos agentes.'
+                    : 'Controle quem tem acesso aos agentes e funcionalidades do Akumol.'}
+                </p>
+              </div>
             </div>
 
             {loadingUsers ? (
@@ -183,9 +193,9 @@ const AdminPanel: React.FC = () => {
               </div>
             ) : (
               <>
-                {/* ABA 1: VISÃO GERAL (MÉTRICAS) */}
+                {/* ABA 1: VISÃO GERAL */}
                 {activeTab === 'overview' && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-500">
                     <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm transition-colors duration-300">
                       <div className="flex justify-between items-start mb-6">
                         <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-2xl"><Users size={24} /></div>
@@ -221,12 +231,37 @@ const AdminPanel: React.FC = () => {
                   </div>
                 )}
 
-                {/* ABA 2: GESTÃO DE USUÁRIOS (TABELA) */}
+                {/* ABA 2: GESTÃO DE USUÁRIOS */}
                 {activeTab === 'users' && (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden transition-colors duration-300 animate-in fade-in duration-300">
-                    <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
-                      <Activity className="text-indigo-500" />
-                      <h2 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Gestão de Agentes e Planos</h2>
+                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden transition-colors duration-300 animate-in fade-in duration-500">
+                    
+                    {/* BARRA DE PESQUISA INTEGRADA */}
+                    <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <Activity className="text-indigo-500" />
+                        <h2 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Agentes e Planos</h2>
+                      </div>
+
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Search size={18} className="text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Pesquisar por nome ou e-mail..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="block w-full md:w-80 pl-11 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        />
+                        {searchTerm && (
+                          <button 
+                            onClick={() => setSearchTerm('')}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-red-500 transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -239,7 +274,7 @@ const AdminPanel: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                          {users.map(u => (
+                          {filteredUsers.map(u => (
                             <tr key={u.uid} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                               <td className="py-5 px-8">
                                 <div className="flex items-center gap-3">
@@ -278,10 +313,17 @@ const AdminPanel: React.FC = () => {
                             </tr>
                           ))}
                           
-                          {users.length === 0 && (
+                          {filteredUsers.length === 0 && (
                             <tr>
-                              <td colSpan={3} className="py-8 text-center text-slate-400 dark:text-slate-500 text-sm font-medium">
-                                Nenhum utilizador encontrado na base de dados.
+                              <td colSpan={3} className="py-20 text-center">
+                                <div className="flex flex-col items-center justify-center gap-3">
+                                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-full">
+                                    <Search size={32} className="text-slate-300 dark:text-slate-700" />
+                                  </div>
+                                  <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">
+                                    {searchTerm ? `Nenhum resultado para "${searchTerm}"` : "Nenhum usuário encontrado."}
+                                  </p>
+                                </div>
                               </td>
                             </tr>
                           )}
