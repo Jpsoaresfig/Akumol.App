@@ -22,7 +22,7 @@ const SentinelaWidget = () => (
 );
 
 const LockedWidget = ({ title, planName }: { title: string, planName: string }) => (
-  <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] relative overflow-hidden group">
+  <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 p-6 rounded-4xl relative overflow-hidden group">
     <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center">
       <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-slate-400 mb-3"><Lock size={20} /></div>
       <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-sm">
@@ -64,7 +64,7 @@ const Dashboard: React.FC = () => {
           <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">Olá, {userName}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest shadow-sm text-white ${
-              plan === 'ultimate' ? 'bg-gradient-to-r from-amber-400 to-orange-500' :
+              plan === 'ultimate' ? 'bg-linear-to-r from-amber-400 to-orange-500' :
               plan === 'plus' ? 'bg-emerald-500' :
               plan === 'premium' ? 'bg-purple-600' : 'bg-slate-800'
             }`}>
@@ -111,7 +111,7 @@ const Dashboard: React.FC = () => {
           {/* 2. ARQUITETO DE HERANÇA (Lógica Dinâmica) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {['plus', 'ultimate'].includes(plan) ? (
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm">
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-4xl shadow-sm">
                 <div className="flex justify-between items-start mb-6">
                   <div className="p-3 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-2xl"><Target size={24} /></div>
                   <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Herança</span>
@@ -124,7 +124,7 @@ const Dashboard: React.FC = () => {
             )}
 
             {/* YU'E BAO (Disponível em quase todos) */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-4xl shadow-sm">
               <div className="flex justify-between items-start mb-6">
                 <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl"><TrendingUp size={24} /></div>
                 <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Rendimento</span>
@@ -141,7 +141,7 @@ const Dashboard: React.FC = () => {
 
           {/* EFEITO MANADA (Exclusivo Ultimate) */}
           {plan === 'ultimate' ? (
-            <div className="bg-gradient-to-br from-amber-400 to-orange-500 p-8 rounded-[2.5rem] text-white shadow-xl shadow-amber-200/50 transition-colors duration-300">
+            <div className="bg-linear-to-br from-amber-400 to-orange-500 p-8 rounded-[2.5rem] text-white shadow-xl shadow-amber-200/50 transition-colors duration-300">
               <div className="flex items-center gap-2 mb-4"><Users size={20} className="text-white" /><span className="text-[10px] font-black uppercase tracking-widest text-white/90">Efeito Manada</span></div>
               <h3 className="text-2xl font-bold tracking-tight">Missão de Equipa</h3>
               <p className="text-white/90 text-sm mt-2 font-medium">O seu grupo economizou 85% da meta semanal.</p>
