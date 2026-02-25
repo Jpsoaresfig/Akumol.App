@@ -3,7 +3,8 @@ import {
   LayoutDashboard, 
   LogOut, 
   ShieldCheck, 
-  MessageSquareText 
+  MessageSquareText,
+  TrendingUp 
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -12,10 +13,13 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Organizado para o Conselheiro ser o centro visual
   const menuItems = [
     { icon: LayoutDashboard, label: 'Início', path: '/' },
+    { icon: TrendingUp, label: 'Evolução', path: '/evolucao' },
+    { icon: MessageSquareText, label: 'Conselheiro', path: '/conselheiro', main: true },
     { icon: ShieldCheck, label: 'Agentes', path: '/agentes' },
-    { icon: MessageSquareText, label: 'Conselheiro', path: '/conselheiro' },
+    { icon: LogOut, label: 'Sair', path: 'logout', action: logout }
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -34,14 +38,16 @@ const Sidebar = () => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4">
-          {menuItems.map((item) => (
+          {menuItems.filter(i => i.path !== 'logout').map((item) => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
               className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all ${
-                isActive(item.path)
-                  ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
-                  : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                item.main 
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none my-4 transform scale-105' 
+                  : isActive(item.path)
+                    ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
               }`}
             >
               <item.icon size={24} />
@@ -61,24 +67,24 @@ const Sidebar = () => {
         </div>
       </aside>
 
-      {/* MOBILE BOTTOM NAV */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex justify-between items-center z-50">
+      {/* MOBILE BOTTOM NAV - DESIGN REFINADO */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-2 flex justify-around items-center z-50 h-16">
         {menuItems.map((item) => (
           <button
             key={item.path}
-            onClick={() => navigate(item.path)}
-            className={`flex flex-col items-center gap-1 transition-colors ${
-              isActive(item.path) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'
+            onClick={() => item.action ? item.action() : navigate(item.path)}
+            className={`flex flex-col items-center justify-center transition-all ${
+              item.main 
+                ? 'bg-indigo-600 text-white p-3 rounded-2xl shadow-indigo-300 dark:shadow-none -mt-8 border-4 border-[#F8FAFC] dark:border-slate-950 scale-110' 
+                : isActive(item.path) 
+                  ? 'text-indigo-600 dark:text-indigo-400' 
+                  : 'text-slate-400'
             }`}
           >
-            <item.icon size={22} />
-            <span className="text-[10px] font-bold">{item.label}</span>
+            <item.icon size={item.main ? 24 : 20} />
+            {!item.main && <span className="text-[9px] font-bold mt-1">{item.label}</span>}
           </button>
         ))}
-        <button onClick={logout} className="flex flex-col items-center gap-1 text-slate-400">
-          <LogOut size={22} />
-          <span className="text-[10px] font-bold">Sair</span>
-        </button>
       </nav>
     </>
   );

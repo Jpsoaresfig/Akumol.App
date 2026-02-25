@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { useAuth } from './hooks/useAuth';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
+import Evolucao from './pages/evolutions/Evolution'; 
 import Agentes from './pages/agentes/Agentesmain'; 
 import Conselheiro from './pages/Counselor/CounselorChat'; 
 import AdminPanel from './pages/Admin';
@@ -43,9 +44,15 @@ function App() {
         />
 
         <Route element={user ? <MainLayout /> : <Navigate to="/login" replace />}>
+          {/* Rota Inicial: Se for admin vai para painel, se não vai para o Dashboard limpo */}
           <Route path="/" element={user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />} />
+          
+          {/* Nova Rota de Métricas/Evolução */}
+          <Route path="/evolucao" element={<Evolucao />} />
+          
           <Route path="/agentes" element={<Agentes />} />
           <Route path="/conselheiro" element={<Conselheiro />} />
+          
           <Route 
             path="/sombra" 
             element={user && ['premium', 'plus', 'ultimate'].includes(user.plan) ? <div className="p-8"><h1>Agente Sombra Ativo</h1></div> : <Navigate to="/agentes" replace />} 
@@ -53,6 +60,8 @@ function App() {
         </Route>
 
         <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
+        
+        {/* Redirecionamento Global */}
         <Route path="*" element={<Navigate to={!user ? "/login" : user.role === 'admin' ? "/admin" : "/"} replace />} />
       </Routes>
     </BrowserRouter>

@@ -1,25 +1,27 @@
 @import "tailwindcss";
 
-/* 1. ATIVA O MODO ESCURO MANUAL NO TAILWIND V4 */
-@custom-variant dark (&:where(.dark, .dark *));
+/* 1. ATIVA O MODO CLARO MANUAL (INVERSO) */
+/* Agora tratamos a classe .light como a exceção */
+@custom-variant light (&:where(.light, .light *));
 
 @theme {
   --color-brand-primary: #4f46e5;
-  --color-brand-bg: #f8fafc;
-  --color-brand-text: #0f172a;
+  /* Invertido: O padrão agora é o escuro */
+  --color-brand-bg: #020617; /* slate-950 */
+  --color-brand-text: #f1f5f9; /* slate-100 */
 }
 
 @layer base {
   body {
-    /* 2. PERMITE QUE O FUNDO GERAL MUDE NO MODO ESCURO */
-    @apply bg-brand-bg text-brand-text dark:bg-slate-950 dark:text-slate-100 antialiased transition-colors duration-300;
+    /* 2. O PADRÃO É ESCURO. Se houver a classe .light, ele muda para o claro */
+    @apply bg-brand-bg text-brand-text light:bg-slate-50 light:text-slate-900 antialiased transition-colors duration-300;
     margin: 0;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
 @layer components {
-  /* Scrollbar Minimalista (com suporte ao dark mode) */
+  /* Scrollbar Minimalista ajustada para fundo escuro */
   ::-webkit-scrollbar {
     width: 6px;
   }
@@ -27,24 +29,23 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 dark:bg-slate-700 rounded-full hover:bg-slate-400 dark:hover:bg-slate-600 transition-colors;
+    @apply bg-slate-700 light:bg-slate-300 rounded-full hover:bg-slate-600 light:hover:bg-slate-400 transition-colors;
   }
 
-  /* Efeito de Vidro para os Cards do Dashboard */
+  /* Efeito de Vidro para os Cards - Padrão Escuro */
   .glass-card {
-    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/20 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-none rounded-[2.5rem] transition-colors duration-300;
+    @apply bg-slate-900/80 light:bg-white/80 backdrop-blur-md border border-slate-700/50 light:border-white/20 shadow-none light:shadow-xl light:shadow-slate-200/50 rounded-[2.5rem] transition-colors duration-300;
   }
   
-  /* Inputs do Login e Registro */
+  /* Inputs do Login e Registro - Padrão Escuro */
   .input-field {
-    @apply w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none 
+    @apply w-full px-4 py-3 rounded-2xl border border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 outline-none 
            transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50;
   }
 
   /* Botões de Ação */
   .btn-primary {
     @apply bg-indigo-600 text-white font-bold py-3 px-6 rounded-2xl 
-           hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 dark:hover:shadow-none
-           active:scale-95 transition-all duration-200 disabled:opacity-50;
+           hover:bg-indigo-700 active:scale-95 transition-all duration-200 disabled:opacity-50;
   }
 }

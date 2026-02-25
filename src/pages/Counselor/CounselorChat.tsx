@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Camera, 
   Mic, 
@@ -10,26 +10,34 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const Conselheiro = () => {
-  const [message, setMessage] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
+const Conselheiro: React.FC = () => {
+  const [message, setMessage] = useState<string>('');
+  const [isRecording, setIsRecording] = useState<boolean>(false);
   const navigate = useNavigate();
+  
+  // CORREÇÃO: Tipagem explícita para evitar o erro de 'never'
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll para a última mensagem ao abrir ou receber nova resposta
-  useEffect(() => {
+  // Auto-scroll para a última mensagem
+  const scrollToBottom = () => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
-  }, []);
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [message]); // Rola sempre que o conteúdo mudar
 
   return (
-    <div className="flex flex-col h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors overflow-hidden">
+    <div className="flex flex-col h-dvh bg-[#F8FAFC] dark:bg-slate-950 transition-colors overflow-hidden">
       
-      {/* HEADER OTIMIZADO PARA MOBILE */}
-      <header className="p-4 md:p-6 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex justify-between items-center z-10">
+      {/* HEADER - Altura Fixa */}
+      <header className="flex-none p-4 md:p-6 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex justify-between items-center z-10">
         <div className="flex items-center gap-3">
-          {/* Botão Voltar visível apenas em mobile para facilitar a navegação rápida */}
           <button 
             onClick={() => navigate(-1)}
             className="lg:hidden p-2 -ml-2 text-slate-500"
@@ -55,42 +63,46 @@ const Conselheiro = () => {
         </button>
       </header>
 
-      {/* ÁREA DE MENSAGENS RESPONSIVA */}
-      <div 
+      {/* ÁREA DE MENSAGENS - Esta área cresce e tem scroll */}
+      <main 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 scroll-smooth pb-10"
+        className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth"
       >
-        {/* Boas-vindas da IA */}
-        <div className="max-w-full md:max-w-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-4 md:p-6 rounded-2xl md:rounded-4xl shadow-sm">
-          <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm leading-relaxed">
-            Olá! Sou o seu Conselheiro Akumol. Como posso ajudar hoje? Pode enviar-me uma **foto**, um **áudio** ou iniciarmos uma **vídeo chamada** para analisar as suas compras em tempo real.
-          </p>
-        </div>
-        
-        {/* Exemplo de Resposta da IA (Balão) */}
-        <div className="flex gap-3 items-start max-w-full md:max-w-2xl">
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-1">
-             <BrainCircuit size={16} className="text-white" />
-          </div>
-          <div className="bg-indigo-50 dark:bg-indigo-500/10 p-4 md:p-6 rounded-2xl rounded-tl-none border border-indigo-100 dark:border-indigo-500/20">
-            <h4 className="font-black text-indigo-600 dark:text-indigo-400 text-[9px] uppercase mb-1.5 tracking-tighter">Análise Patrimonial</h4>
-            <p className="text-slate-700 dark:text-slate-300 text-xs md:text-sm leading-snug">
-              Detetei que esta compra representa **12% da sua reserva de emergência**. Sugiro aguardar pela promoção da próxima semana.
+        <div className="max-w-4xl mx-auto w-full space-y-6">
+          {/* Boas-vindas */}
+          <div className="max-w-[85%] md:max-w-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm">
+            <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm leading-relaxed">
+              Olá! Sou o seu Conselheiro Akumol. Como posso ajudar hoje? Pode enviar-me uma **foto**, um **áudio** ou iniciarmos uma **vídeo chamada**.
             </p>
           </div>
-        </div>
-      </div>
+          
+          {/* Balão da IA */}
+          <div className="flex gap-3 items-start max-w-[90%] md:max-w-2xl">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-1">
+              <BrainCircuit size={16} className="text-white" />
+            </div>
+            <div className="bg-indigo-50 dark:bg-indigo-500/10 p-4 md:p-6 rounded-2xl rounded-tl-none border border-indigo-100 dark:border-indigo-500/20">
+              <h4 className="font-black text-indigo-600 dark:text-indigo-400 text-[9px] uppercase mb-1.5 tracking-tighter">Análise Patrimonial</h4>
+              <p className="text-slate-700 dark:text-slate-300 text-xs md:text-sm leading-snug">
+                Detetei que esta compra representa **12% da sua reserva de emergência**. Sugiro aguardar pela promoção da próxima semana.
+              </p>
+            </div>
+          </div>
 
-      {/* BARRA DE INPUT MULTIMÉDIA - FIXA NO FUNDO */}
-      <div className="p-4 md:p-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+          {/* Espaçador final para garantir que a última mensagem não fique colada no input */}
+          <div className="h-4" />
+        </div>
+      </main>
+
+      {/* INPUT - Sempre fixo no fundo */}
+      <footer className="flex-none p-4 md:p-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
         <div className="max-w-4xl mx-auto flex items-end gap-2 md:gap-3">
-          <div className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl md:rounded-4xl p-1.5 flex items-end gap-0.5 md:gap-1">
+          <div className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl md:rounded-3xl p-1.5 flex items-end gap-1">
             
-            {/* Controlos Multimédia Otimizados para Toque */}
-            <button className="p-2.5 md:p-3 text-slate-400 hover:text-indigo-600 active:bg-slate-200 dark:active:bg-slate-700 rounded-full transition-colors">
+            <button className="p-2.5 md:p-3 text-slate-400 hover:text-indigo-600 rounded-full transition-colors">
               <Camera size={20} />
             </button>
-            <button className="p-2.5 md:p-3 text-slate-400 hover:text-indigo-600 active:bg-slate-200 dark:active:bg-slate-700 rounded-full transition-colors">
+            <button className="p-2.5 md:p-3 text-slate-400 hover:text-indigo-600 rounded-full transition-colors">
               <Paperclip size={20} />
             </button>
             
@@ -105,8 +117,6 @@ const Conselheiro = () => {
             <button 
               onMouseDown={() => setIsRecording(true)}
               onMouseUp={() => setIsRecording(false)}
-              onTouchStart={() => setIsRecording(true)}
-              onTouchEnd={() => setIsRecording(false)}
               className={`p-2.5 md:p-3 rounded-full transition-all ${
                 isRecording ? 'bg-red-500 text-white animate-pulse' : 'text-slate-400 hover:text-indigo-600'
               }`}
@@ -121,9 +131,9 @@ const Conselheiro = () => {
         </div>
         
         <p className="hidden md:block text-[9px] text-center text-slate-400 mt-4 uppercase font-bold tracking-widest">
-          O Conselheiro IA utiliza visão computacional e análise de dados bancários
+          O Conselheiro IA utiliza visão computacional e análise de dados
         </p>
-      </div>
+      </footer>
     </div>
   );
 };
