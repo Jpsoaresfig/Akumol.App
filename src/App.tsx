@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
-import Sidebar from './components/Sidebar'; // Certifique-se de criar este componente
+import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
-import Agentes from './pages/agentes/Agentesmain';       // Certifique-se de criar este componente
+import Agentes from './pages/agentes/Agentesmain'; 
+import Conselheiro from './pages/Counselor/CounselorChat'; 
 import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
 
 // --- COMPONENTE DE LAYOUT ---
-// Este componente envolve as rotas protegidas e adiciona a Sidebar lateral
 const MainLayout = () => (
   <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
     <Sidebar />
@@ -59,10 +59,13 @@ function App() {
             } 
           />
 
-          {/* Nova Página de Agentes (Catálogo) */}
+          {/* Página de Agentes (Catálogo) */}
           <Route path="/agentes" element={<Agentes />} />
 
-          {/* Rotas específicas de Agentes (Caso queira páginas separadas no futuro) */}
+          {/* NOVA ROTA: Conselheiro de Compras Multimodal */}
+          <Route path="/conselheiro" element={<Conselheiro />} />
+
+          {/* Rotas específicas de Agentes (Exemplo de Verificação de Plano) */}
           <Route 
             path="/sombra" 
             element={
@@ -74,13 +77,13 @@ function App() {
 
         </Route>
 
-        {/* ROTA ADMIN (Geralmente sem a sidebar de usuário comum) */}
+        {/* ROTA ADMIN */}
         <Route 
           path="/admin" 
           element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} 
         />
 
-        {/* FALLBACK */}
+        {/* FALLBACK GLOBAL */}
         <Route 
           path="*" 
           element={

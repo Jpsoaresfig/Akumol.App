@@ -1,5 +1,11 @@
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  LogOut, 
+  ShieldCheck, 
+  MessageSquareText // Novo ícone para o Conselheiro
+} from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const Sidebar = () => {
@@ -10,6 +16,7 @@ const Sidebar = () => {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: ShieldCheck, label: 'Agentes IA', path: '/agentes' },
+    { icon: MessageSquareText, label: 'Conselheiro', path: '/conselheiro' }, // Nova Rota
   ];
 
   const isActive = (path: string) => location.pathname === path;
