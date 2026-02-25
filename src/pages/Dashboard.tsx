@@ -18,7 +18,6 @@ const SentinelaWidget = ({ hourlyRate = 50 }: { hourlyRate?: number }) => {
     if (!url) return;
     setIsAnalyzing(true);
     
-    // Simulação de delay de IA e extração de preço
     setTimeout(() => {
       const precoSimulado = Math.floor(Math.random() * (800 - 100 + 1)) + 100; 
       const horas = precoSimulado / hourlyRate;
@@ -33,11 +32,10 @@ const SentinelaWidget = ({ hourlyRate = 50 }: { hourlyRate?: number }) => {
 
   const handleLock = () => {
     setIsLocked(true);
-    // Aqui no futuro dispararemos o salvamento no Firestore
   };
 
   return (
-    <div className="bg-indigo-600 dark:bg-indigo-900/80 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-all duration-300">
+    <div className="bg-indigo-600 dark:bg-indigo-900/80 p-6 md:p-8 rounded-4xl md:rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-all duration-300">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <ShieldCheck size={20} className="text-indigo-200 dark:text-indigo-300" />
@@ -48,8 +46,8 @@ const SentinelaWidget = ({ hourlyRate = 50 }: { hourlyRate?: number }) => {
 
       {!analysis && !isLocked ? (
         <>
-          <p className="text-2xl font-bold leading-tight tracking-tight">Filtro de 72h Ativo</p>
-          <div className="mt-6 flex gap-2">
+          <p className="text-xl md:text-2xl font-bold leading-tight tracking-tight">Filtro de 72h Ativo</p>
+          <div className="mt-6 flex flex-col sm:flex-row gap-2">
             <input 
               type="text" 
               value={url}
@@ -61,7 +59,7 @@ const SentinelaWidget = ({ hourlyRate = 50 }: { hourlyRate?: number }) => {
             <button 
               onClick={analisarCompra}
               disabled={isAnalyzing || !url}
-              className="bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 p-3 rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+              className="w-full sm:w-auto flex justify-center bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 p-4 rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
             >
               {isAnalyzing ? <Clock size={20} className="animate-spin" /> : <ArrowUpRight size={20} />}
             </button>
@@ -71,10 +69,10 @@ const SentinelaWidget = ({ hourlyRate = 50 }: { hourlyRate?: number }) => {
         <div className="text-center py-4 animate-in zoom-in duration-300">
           <AlertCircle size={40} className="mx-auto mb-3 text-indigo-200" />
           <p className="font-bold text-lg">Desejo em Maturação</p>
-          <p className="text-xs text-indigo-200 mt-1">Volte em 72 horas para decidir se este gasto ainda faz sentido.</p>
+          <p className="text-xs text-indigo-200 mt-1">Volte em 72 horas para decidir.</p>
           <button 
             onClick={() => {setAnalysis(null); setIsLocked(false); setUrl('');}}
-            className="mt-4 text-[10px] uppercase font-bold tracking-widest opacity-60 hover:opacity-100"
+            className="mt-6 text-[10px] uppercase font-black tracking-widest opacity-60 hover:opacity-100 p-2"
           >
             Cancelar Bloqueio
           </button>
@@ -85,17 +83,17 @@ const SentinelaWidget = ({ hourlyRate = 50 }: { hourlyRate?: number }) => {
             <Clock size={14} />
             <span className="text-[10px] font-bold uppercase">Custo de Vida Real</span>
           </div>
-          <h2 className="text-4xl font-black tracking-tighter">
+          <h2 className="text-3xl md:text-4xl font-black tracking-tighter">
             {analysis?.lifeHours} Horas
           </h2>
           <p className="text-xs text-indigo-200 mt-2 leading-relaxed">
-            Isto custa <span className="text-white font-bold">{Math.ceil((analysis?.lifeHours || 0) / 8)} dias</span> inteiros de trabalho.
+            Equivale a <span className="text-white font-bold">{Math.ceil((analysis?.lifeHours || 0) / 8)} dias</span> de trabalho.
           </p>
           
-          <div className="mt-6 space-y-2">
+          <div className="mt-6 flex flex-col gap-2">
             <button 
               onClick={handleLock}
-              className="w-full bg-white text-indigo-600 font-bold py-3 rounded-xl text-sm shadow-lg active:scale-95 transition-transform"
+              className="w-full bg-white text-indigo-600 font-bold py-4 rounded-xl text-sm shadow-lg active:scale-95 transition-transform"
             >
               Ativar Bloqueio de 72h
             </button>
@@ -113,8 +111,8 @@ const SentinelaWidget = ({ hourlyRate = 50 }: { hourlyRate?: number }) => {
 };
 
 const LockedWidget = ({ title, planName }: { title: string, planName: string }) => (
-  <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 p-6 rounded-4xl relative overflow-hidden group">
-    <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center">
+  <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl md:rounded-4xl relative overflow-hidden group">
+    <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center p-4 text-center">
       <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-slate-400 mb-3"><Lock size={20} /></div>
       <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-sm">
         Desbloquear {planName}
@@ -141,9 +139,9 @@ const Dashboard: React.FC = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
       <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-indigo-600 font-black animate-pulse">SINCRONIZANDO GUARDIÃO DIGITAL...</p>
+      <p className="text-indigo-600 font-black animate-pulse uppercase tracking-widest text-xs">Sincronizando Guardião...</p>
     </div>
   );
 
@@ -151,13 +149,13 @@ const Dashboard: React.FC = () => {
   const userName = user?.displayName?.split(' ')[0] || 'Investidor';
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 p-4 md:p-8 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 p-4 md:p-8 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-24 lg:pb-8">
       
-      {/* HEADER */}
-      <header className="max-w-7xl mx-auto flex justify-between items-center mb-10">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">Olá, {userName}</h1>
-          <div className="flex items-center gap-2 mt-1">
+      {/* HEADER ADAPTADO */}
+      <header className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6">
+        <div className="w-full sm:w-auto">
+          <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-800 dark:text-white leading-none">Olá, {userName}</h1>
+          <div className="flex items-center gap-2 mt-2">
             <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest shadow-sm text-white ${
               plan === 'ultimate' ? 'bg-linear-to-r from-amber-400 to-orange-500' :
               plan === 'plus' ? 'bg-emerald-500' :
@@ -168,11 +166,12 @@ const Dashboard: React.FC = () => {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setIsDarkMode(!isDarkMode)} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-sm">
+        
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm active:scale-95 transition-all">
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
-          <button onClick={logout} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-sm hover:text-red-500 transition-colors">
+          <button onClick={logout} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm hover:text-red-500 active:scale-95 transition-all">
             <LogOut size={20} />
           </button>
         </div>
@@ -180,42 +179,41 @@ const Dashboard: React.FC = () => {
 
       <main className="max-w-7xl mx-auto space-y-6">
         
-        {/* BLOCO DE DINHEIRO E PATRIMÓNIO */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center relative overflow-hidden">
+        {/* BLOCO DE PATRIMÓNIO - RESPONSIVO */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-10 rounded-4xl md:rounded-[2.5rem] shadow-sm flex flex-col justify-between relative overflow-hidden">
             <div className="relative z-10">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Património Total</p>
-              <h2 className="text-5xl font-black text-slate-800 dark:text-white tracking-tighter">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Património Total</p>
+              <h2 className="text-3xl md:text-5xl font-black text-slate-800 dark:text-white tracking-tighter">
                 {formatCurrency(user?.financialData?.totalInvested || 0)}
               </h2>
-              <div className="flex items-center gap-2 mt-4 text-emerald-500 font-bold text-sm">
+              <div className="flex items-center gap-2 mt-4 text-emerald-500 font-bold text-xs md:text-sm">
                 <TrendingUp size={16} />
                 <span>+ 8.4% este mês</span>
               </div>
             </div>
             
-            <div className="mt-6 md:mt-0 flex gap-4 relative z-10">
-              <button className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-2xl font-bold text-sm hover:scale-105 transition-transform">
+            <div className="mt-8 flex flex-row gap-3 relative z-10">
+              <button className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-4 rounded-2xl font-bold text-xs md:text-sm active:scale-95 transition-all">
                 Depositar
               </button>
-              <button className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+              <button className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-4 rounded-2xl font-bold text-xs md:text-sm active:scale-95 transition-all">
                 Retirar
               </button>
             </div>
-
-            <div className={`absolute -right-10 -bottom-10 opacity-5 dark:opacity-10 ${
+            <div className={`absolute -right-16 -bottom-16 opacity-5 dark:opacity-10 pointer-events-none ${
               plan === 'ultimate' ? 'text-amber-500' : 'text-indigo-500'
             }`}>
-              <ShieldCheck size={240} />
+              <ShieldCheck size={280} />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm flex flex-col justify-center">
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Saldo em Conta</p>
-            <h2 className="text-3xl font-black text-slate-800 dark:text-white">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-8 rounded-4xl shadow-sm flex flex-col justify-center">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Saldo em Conta</p>
+            <h2 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white leading-tight">
               {formatCurrency(1250.45)} 
             </h2>
-            <p className="text-xs text-slate-400 mt-2 font-medium italic">Disponível para transações</p>
+            <p className="text-[10px] text-slate-400 mt-2 font-medium italic">Disponível para transações</p>
           </div>
         </div>
 
@@ -224,57 +222,58 @@ const Dashboard: React.FC = () => {
             
             {/* AGENTE SOMBRA */}
             {['premium', 'plus', 'ultimate'].includes(plan) ? (
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden">
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-10 rounded-4xl md:rounded-[2.5rem] shadow-sm relative overflow-hidden">
                  <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-4 text-red-500"><Zap size={18} /><span className="text-xs font-black uppercase tracking-widest">Agente Sombra</span></div>
-                  <h2 className="text-slate-800 dark:text-white font-black text-3xl tracking-tight">Vazamentos Ocultos</h2>
-                  <p className="text-6xl font-black text-red-500 mt-2">R$ 142,90</p>
-                  <button className="mt-8 bg-red-500 text-white font-bold py-3 px-8 rounded-xl text-sm shadow-lg shadow-red-500/30 active:scale-95 transition-transform">Exterminar Gastos</button>
+                  <div className="flex items-center gap-2 mb-4 text-red-500"><Zap size={18} /><span className="text-[10px] font-black uppercase tracking-widest leading-none">Agente Sombra</span></div>
+                  <h2 className="text-slate-800 dark:text-white font-black text-2xl md:text-3xl tracking-tight">Vazamentos Ocultos</h2>
+                  <p className="text-4xl md:text-6xl font-black text-red-500 mt-3 leading-none">R$ 142,90</p>
+                  <button className="mt-8 w-full sm:w-auto bg-red-500 text-white font-bold py-4 px-10 rounded-xl text-sm shadow-lg shadow-red-500/30 active:scale-95 transition-all">Exterminar Gastos</button>
                 </div>
-                <div className="absolute top-0 right-0 w-72 h-72 bg-red-50 dark:bg-red-900/10 rounded-full -mr-24 -mt-24 opacity-60"></div>
+                <div className="absolute top-0 right-0 w-48 md:w-72 h-48 md:h-72 bg-red-50 dark:bg-red-900/10 rounded-full -mr-16 -mt-16 opacity-60"></div>
               </div>
             ) : (
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm">
-                <div className="flex items-center gap-2 mb-4 text-indigo-600"><CreditCard size={18} /><span className="text-xs font-black uppercase tracking-widest">Monitorização</span></div>
-                <h2 className="text-slate-800 dark:text-white font-black text-3xl tracking-tight">Análise de Gastos</h2>
-                <button className="mt-8 bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl text-sm active:scale-95 transition-transform">Lugar Conta Bancária</button>
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-8 rounded-4xl shadow-sm">
+                <div className="flex items-center gap-2 mb-4 text-indigo-600"><CreditCard size={18} /><span className="text-[10px] font-black uppercase tracking-widest">Monitorização</span></div>
+                <h2 className="text-slate-800 dark:text-white font-black text-xl md:text-3xl tracking-tight leading-tight">Análise de Gastos</h2>
+                <button className="mt-8 w-full sm:w-auto bg-indigo-600 text-white font-bold py-4 px-8 rounded-xl text-xs md:text-sm active:scale-95">Ligar Conta Bancária</button>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
               {['plus', 'ultimate'].includes(plan) ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-4xl shadow-sm">
+                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
                   <div className="flex justify-between items-start mb-6">
                     <div className="p-3 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-2xl"><Target size={24} /></div>
                     <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Herança</span>
                   </div>
-                  <h3 className="font-bold text-slate-800 dark:text-white text-sm">Horas de Vida Salvas</h3>
-                  <p className="text-4xl font-black text-slate-800 dark:text-white mt-1">{user?.financialData?.hoursSaved || 0}h</p>
+                  <h3 className="font-bold text-slate-800 dark:text-white text-xs md:text-sm">Horas de Vida Salvas</h3>
+                  <p className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mt-1">{user?.financialData?.hoursSaved || 0}h</p>
                 </div>
               ) : (
                 <LockedWidget title="Arquiteto de Herança" planName="Plus Pro" />
               )}
 
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-4xl shadow-sm">
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
                 <div className="flex justify-between items-start mb-6">
                   <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl"><TrendingUp size={24} /></div>
                   <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Rendimento</span>
                 </div>
-                <h3 className="font-bold text-slate-800 dark:text-white text-sm">Yu’e Bao Brasileiro</h3>
-                <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">R$ 42,30</p>
+                <h3 className="font-bold text-slate-800 dark:text-white text-xs md:text-sm">Yu’e Bao Brasileiro</h3>
+                <p className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white mt-1">R$ 42,30</p>
               </div>
             </div>
           </div>
 
+          {/* COLUNA LATERAL - EM MOBILE FICA NO FINAL DA PÁGINA */}
           <div className="lg:col-span-4 space-y-6">
             <SentinelaWidget hourlyRate={user?.financialData?.totalInvested ? 60 : 40} />
 
             {plan === 'ultimate' ? (
-              <div className="bg-linear-to-br from-amber-400 to-orange-500 p-8 rounded-[2.5rem] text-white shadow-xl shadow-amber-200/50 transition-colors duration-300">
+              <div className="bg-linear-to-br from-amber-400 to-orange-500 p-6 md:p-8 rounded-4xl md:rounded-[2.5rem] text-white shadow-xl shadow-amber-200/50 transition-colors duration-300">
                 <div className="flex items-center gap-2 mb-4"><Users size={20} className="text-white" /><span className="text-[10px] font-black uppercase tracking-widest text-white/90">Efeito Manada</span></div>
-                <h3 className="text-2xl font-bold tracking-tight">Missão de Equipa</h3>
+                <h3 className="text-xl md:text-2xl font-bold tracking-tight">Missão de Equipa</h3>
                 <p className="text-white/90 text-sm mt-2 font-medium">Economia coletiva em 85%.</p>
-                <button className="mt-6 w-full py-3 bg-white text-amber-600 rounded-xl font-bold text-[10px] uppercase tracking-wider active:scale-95 transition-transform">Ver Ranking</button>
+                <button className="mt-8 w-full py-4 bg-white text-amber-600 rounded-xl font-bold text-[10px] uppercase tracking-wider active:scale-95 transition-transform shadow-md">Ver Ranking</button>
               </div>
             ) : (
               <LockedWidget title="Efeito Manada" planName="Ultimate Elite" />

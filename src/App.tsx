@@ -9,15 +9,14 @@ import LoginPage from './pages/login/Login';
 
 // --- COMPONENTE DE LAYOUT ---
 const MainLayout = () => (
-  <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
+  <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
     <Sidebar />
-    <main className="flex-1 overflow-y-auto">
+    {/* pb-20 no mobile para dar espaço à Bottom Nav inferior */}
+    <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
       <Outlet /> 
     </main>
   </div>
 );
-
-// --- COMPONENTE PRINCIPAL ---
 
 function App() {
   const { user, loading } = useAuth();
@@ -38,59 +37,23 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        
-        {/* ROTA PÚBLICA */}
         <Route 
           path="/login" 
-          element={
-            !user ? <LoginPage /> : 
-            <Navigate to={user.role === 'admin' ? "/admin" : "/"} replace />
-          } 
+          element={!user ? <LoginPage /> : <Navigate to={user.role === 'admin' ? "/admin" : "/"} replace />} 
         />
 
-        {/* ROTAS PROTEGIDAS COM SIDEBAR (LAYOUT COMUM) */}
         <Route element={user ? <MainLayout /> : <Navigate to="/login" replace />}>
-          
-          {/* Dashboard Principal */}
-          <Route 
-            path="/" 
-            element={
-              user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />
-            } 
-          />
-
-          {/* Página de Agentes (Catálogo) */}
+          <Route path="/" element={user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />} />
           <Route path="/agentes" element={<Agentes />} />
-
-          {/* NOVA ROTA: Conselheiro de Compras Multimodal */}
           <Route path="/conselheiro" element={<Conselheiro />} />
-
-          {/* Rotas específicas de Agentes (Exemplo de Verificação de Plano) */}
           <Route 
             path="/sombra" 
-            element={
-              ['premium', 'plus', 'ultimate'].includes(user?.plan || '') 
-                ? <div className="p-8"><h1>Agente Sombra Ativo</h1></div> 
-                : <Navigate to="/agentes" replace />
-            } 
+            element={user && ['premium', 'plus', 'ultimate'].includes(user.plan) ? <div className="p-8"><h1>Agente Sombra Ativo</h1></div> : <Navigate to="/agentes" replace />} 
           />
-
         </Route>
 
-        {/* ROTA ADMIN */}
-        <Route 
-          path="/admin" 
-          element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} 
-        />
-
-        {/* FALLBACK GLOBAL */}
-        <Route 
-          path="*" 
-          element={
-            <Navigate to={!user ? "/login" : user.role === 'admin' ? "/admin" : "/"} replace />
-          } 
-        />
-        
+        <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to={!user ? "/login" : user.role === 'admin' ? "/admin" : "/"} replace />} />
       </Routes>
     </BrowserRouter>
   );
