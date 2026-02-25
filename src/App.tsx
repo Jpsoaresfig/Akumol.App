@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { useAuth } from './hooks/useAuth';
 import Sidebar from './components/Sidebar'; // Certifique-se de criar este componente
 import Dashboard from './pages/Dashboard';
-import Agentes from './pages/Agentes';       // Certifique-se de criar este componente
+import Agentes from './pages/agentes/Agentesmain';       // Certifique-se de criar este componente
 import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
 

@@ -1,7 +1,26 @@
+import React from 'react';
 import { ShieldCheck, Zap, Target, Users, Brain, HeartPulse } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth'; // Ajustado o caminho para subir apenas um nível
 
-const AgenteCard = ({ icon: Icon, name, description, plan, color, locked }: any) => (
+// 1. Definição da Interface para as propriedades do Card
+interface AgenteCardProps {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  name: string;
+  description: string;
+  plan: string;
+  color: string;
+  locked: boolean;
+}
+
+// 2. Aplicação da Interface no componente (removendo o 'any')
+const AgenteCard: React.FC<AgenteCardProps> = ({ 
+  icon: Icon, 
+  name, 
+  description, 
+  plan, 
+  color, 
+  locked 
+}) => (
   <div className={`p-8 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 relative overflow-hidden group transition-all ${locked ? 'opacity-60 grayscale' : 'hover:shadow-xl hover:-translate-y-1'}`}>
     <div className={`p-4 rounded-2xl w-fit mb-6 ${color}`}>
       <Icon size={32} className="text-white" />
@@ -17,11 +36,12 @@ const AgenteCard = ({ icon: Icon, name, description, plan, color, locked }: any)
   </div>
 );
 
-const Agentes = () => {
+const Agentes: React.FC = () => {
   const { user } = useAuth();
   const plan = user?.plan || 'basic';
 
-  const agentes = [
+  // 3. Tipagem explícita da array de objetos para garantir segurança
+  const agentes: AgenteCardProps[] = [
     { icon: ShieldCheck, name: 'Sentinela', description: 'O filtro de 72h contra compras por impulso.', plan: 'Basic', color: 'bg-indigo-600', locked: false },
     { icon: Zap, name: 'Sombra', description: 'Exterminador de taxas e assinaturas inúteis.', plan: 'Premium', color: 'bg-red-500', locked: !['premium', 'plus', 'ultimate'].includes(plan) },
     { icon: Target, name: 'Radar', description: 'Stacking automático de milhas e cashbacks.', plan: 'Premium', color: 'bg-orange-500', locked: !['premium', 'plus', 'ultimate'].includes(plan) },
