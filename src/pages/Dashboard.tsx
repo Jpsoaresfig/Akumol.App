@@ -2,30 +2,115 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { 
   ShieldCheck, Zap, TrendingUp, Users, LogOut, 
-  ArrowUpRight, Sun, Moon, Lock, CreditCard, Target, Crown 
+  ArrowUpRight, Sun, Moon, Lock, CreditCard, Target, Crown, 
+  Clock, AlertCircle 
 } from 'lucide-react';
 
 // --- SUB-COMPONENTES DE INTERFACE ---
 
-const SentinelaWidget = () => (
-  <div className="bg-indigo-600 dark:bg-indigo-900/80 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-colors duration-300">
-    <div className="flex items-center gap-2 mb-6">
-      <ShieldCheck size={20} className="text-indigo-200 dark:text-indigo-300" />
-      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 dark:text-indigo-300">Agente Sentinela</span>
+const SentinelaWidget = ({ hourlyRate = 50 }: { hourlyRate?: number }) => {
+  const [url, setUrl] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<{ price: number; lifeHours: number } | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+
+  const analisarCompra = () => {
+    if (!url) return;
+    setIsAnalyzing(true);
+    
+    // Simulação de delay de IA e extração de preço
+    setTimeout(() => {
+      const precoSimulado = Math.floor(Math.random() * (800 - 100 + 1)) + 100; 
+      const horas = precoSimulado / hourlyRate;
+      
+      setAnalysis({
+        price: precoSimulado,
+        lifeHours: parseFloat(horas.toFixed(1))
+      });
+      setIsAnalyzing(false);
+    }, 1500);
+  };
+
+  const handleLock = () => {
+    setIsLocked(true);
+    // Aqui no futuro dispararemos o salvamento no Firestore
+  };
+
+  return (
+    <div className="bg-indigo-600 dark:bg-indigo-900/80 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-all duration-300">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <ShieldCheck size={20} className="text-indigo-200 dark:text-indigo-300" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 dark:text-indigo-300">Agente Sentinela</span>
+        </div>
+        {isLocked && <span className="bg-red-500 text-[8px] font-bold px-2 py-1 rounded-full animate-pulse">BLOQUEIO ATIVO</span>}
+      </div>
+
+      {!analysis && !isLocked ? (
+        <>
+          <p className="text-2xl font-bold leading-tight tracking-tight">Filtro de 72h Ativo</p>
+          <div className="mt-6 flex gap-2">
+            <input 
+              type="text" 
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder={isAnalyzing ? "Analisando..." : "Link do produto..."} 
+              disabled={isAnalyzing}
+              className="w-full bg-indigo-500/50 dark:bg-indigo-800/50 border border-indigo-400/30 dark:border-indigo-700/50 rounded-xl px-4 py-3 text-sm outline-none placeholder:text-indigo-300 disabled:opacity-50" 
+            />
+            <button 
+              onClick={analisarCompra}
+              disabled={isAnalyzing || !url}
+              className="bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 p-3 rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {isAnalyzing ? <Clock size={20} className="animate-spin" /> : <ArrowUpRight size={20} />}
+            </button>
+          </div>
+        </>
+      ) : isLocked ? (
+        <div className="text-center py-4 animate-in zoom-in duration-300">
+          <AlertCircle size={40} className="mx-auto mb-3 text-indigo-200" />
+          <p className="font-bold text-lg">Desejo em Maturação</p>
+          <p className="text-xs text-indigo-200 mt-1">Volte em 72 horas para decidir se este gasto ainda faz sentido.</p>
+          <button 
+            onClick={() => {setAnalysis(null); setIsLocked(false); setUrl('');}}
+            className="mt-4 text-[10px] uppercase font-bold tracking-widest opacity-60 hover:opacity-100"
+          >
+            Cancelar Bloqueio
+          </button>
+        </div>
+      ) : (
+        <div className="animate-in slide-in-from-bottom-4 duration-500">
+          <div className="flex items-center gap-2 mb-2 text-indigo-200">
+            <Clock size={14} />
+            <span className="text-[10px] font-bold uppercase">Custo de Vida Real</span>
+          </div>
+          <h2 className="text-4xl font-black tracking-tighter">
+            {analysis?.lifeHours} Horas
+          </h2>
+          <p className="text-xs text-indigo-200 mt-2 leading-relaxed">
+            Isto custa <span className="text-white font-bold">{Math.ceil((analysis?.lifeHours || 0) / 8)} dias</span> inteiros de trabalho.
+          </p>
+          
+          <div className="mt-6 space-y-2">
+            <button 
+              onClick={handleLock}
+              className="w-full bg-white text-indigo-600 font-bold py-3 rounded-xl text-sm shadow-lg active:scale-95 transition-transform"
+            >
+              Ativar Bloqueio de 72h
+            </button>
+            <button 
+              onClick={() => {setAnalysis(null); setUrl('');}}
+              className="w-full bg-indigo-500/30 text-white font-bold py-3 rounded-xl text-xs opacity-80 hover:opacity-100 transition-opacity"
+            >
+              Assumir Risco e Comprar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
-    <p className="text-2xl font-bold leading-tight tracking-tight">Filtro de 72h Ativo</p>
-    <div className="mt-6 flex gap-2">
-      <input 
-        type="text" 
-        placeholder="Link do produto..." 
-        className="w-full bg-indigo-500/50 dark:bg-indigo-800/50 border border-indigo-400/30 dark:border-indigo-700/50 rounded-xl px-4 py-3 text-sm outline-none placeholder:text-indigo-300" 
-      />
-      <button className="bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 p-3 rounded-xl hover:bg-indigo-50 transition-colors">
-        <ArrowUpRight size={20} />
-      </button>
-    </div>
-  </div>
-);
+  );
+};
 
 const LockedWidget = ({ title, planName }: { title: string, planName: string }) => (
   <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 p-6 rounded-4xl relative overflow-hidden group">
@@ -144,7 +229,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex items-center gap-2 mb-4 text-red-500"><Zap size={18} /><span className="text-xs font-black uppercase tracking-widest">Agente Sombra</span></div>
                   <h2 className="text-slate-800 dark:text-white font-black text-3xl tracking-tight">Vazamentos Ocultos</h2>
                   <p className="text-6xl font-black text-red-500 mt-2">R$ 142,90</p>
-                  <button className="mt-8 bg-red-500 text-white font-bold py-3 px-8 rounded-xl text-sm shadow-lg shadow-red-500/30">Exterminar Gastos</button>
+                  <button className="mt-8 bg-red-500 text-white font-bold py-3 px-8 rounded-xl text-sm shadow-lg shadow-red-500/30 active:scale-95 transition-transform">Exterminar Gastos</button>
                 </div>
                 <div className="absolute top-0 right-0 w-72 h-72 bg-red-50 dark:bg-red-900/10 rounded-full -mr-24 -mt-24 opacity-60"></div>
               </div>
@@ -152,7 +237,7 @@ const Dashboard: React.FC = () => {
               <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm">
                 <div className="flex items-center gap-2 mb-4 text-indigo-600"><CreditCard size={18} /><span className="text-xs font-black uppercase tracking-widest">Monitorização</span></div>
                 <h2 className="text-slate-800 dark:text-white font-black text-3xl tracking-tight">Análise de Gastos</h2>
-                <button className="mt-8 bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl text-sm">Ligar Conta Bancária</button>
+                <button className="mt-8 bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl text-sm active:scale-95 transition-transform">Lugar Conta Bancária</button>
               </div>
             )}
 
@@ -182,14 +267,14 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="lg:col-span-4 space-y-6">
-            <SentinelaWidget />
+            <SentinelaWidget hourlyRate={user?.financialData?.totalInvested ? 60 : 40} />
 
             {plan === 'ultimate' ? (
               <div className="bg-linear-to-br from-amber-400 to-orange-500 p-8 rounded-[2.5rem] text-white shadow-xl shadow-amber-200/50 transition-colors duration-300">
                 <div className="flex items-center gap-2 mb-4"><Users size={20} className="text-white" /><span className="text-[10px] font-black uppercase tracking-widest text-white/90">Efeito Manada</span></div>
                 <h3 className="text-2xl font-bold tracking-tight">Missão de Equipa</h3>
                 <p className="text-white/90 text-sm mt-2 font-medium">Economia coletiva em 85%.</p>
-                <button className="mt-6 w-full py-3 bg-white text-amber-600 rounded-xl font-bold text-[10px] uppercase tracking-wider">Ver Ranking</button>
+                <button className="mt-6 w-full py-3 bg-white text-amber-600 rounded-xl font-bold text-[10px] uppercase tracking-wider active:scale-95 transition-transform">Ver Ranking</button>
               </div>
             ) : (
               <LockedWidget title="Efeito Manada" planName="Ultimate Elite" />

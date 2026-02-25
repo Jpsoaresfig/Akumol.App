@@ -1,43 +1,33 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import Sidebar from './components/Sidebar'; // Certifique-se de criar este componente
+import Dashboard from './pages/Dashboard';
+import Agentes from './pages/Agentes';       // Certifique-se de criar este componente
 import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
-import Dashboard from './pages/Dashboard'; // Importação da nova tela centralizada
 
-// --- PÁGINAS TEMPORÁRIAS DOS AGENTES (ROADMAP) ---
-
-const SombraPage = () => (
-  <div className="p-8 min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-    <h1 className="text-2xl font-bold text-red-500">Agente Sombra (Premium)</h1>
-    <p>Varredura de extrato em busca de gastos ocultos e assinaturas inúteis...</p>
-  </div>
-);
-
-const HerancaPage = () => (
-  <div className="p-8 min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-    <h1 className="text-2xl font-bold text-green-500">Arquiteto de Herança (Plus Pro)</h1>
-    <p>Convertendo centavos e arredondamentos em tempo real de aposentadoria...</p>
-  </div>
-);
-
-const ManadaPage = () => (
-  <div className="p-8 min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-    <h1 className="text-2xl font-bold text-indigo-500">Efeito Manada (Ultimate Elite)</h1>
-    <p>Missões semanais em grupo, ranking comunitário e táticas de economia chinesa...</p>
+// --- COMPONENTE DE LAYOUT ---
+// Este componente envolve as rotas protegidas e adiciona a Sidebar lateral
+const MainLayout = () => (
+  <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
+    <Sidebar />
+    <main className="flex-1 overflow-y-auto">
+      <Outlet /> 
+    </main>
   </div>
 );
 
 // --- COMPONENTE PRINCIPAL ---
 
 function App() {
-  const { user, loading } = useAuth(); // Busca estado de autenticação e carregamento
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
         <div className="flex flex-col items-center">
           <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <div className="text-indigo-600 dark:text-indigo-400 font-black animate-pulse tracking-tighter">
+          <div className="text-indigo-600 dark:text-indigo-400 font-black animate-pulse tracking-tighter text-center">
             CARREGANDO GUARDIÃO DIGITAL...
           </div>
         </div>
@@ -49,7 +39,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         
-        {/* ROTA PÚBLICA: Redirecionamento de Login */}
+        {/* ROTA PÚBLICA */}
         <Route 
           path="/login" 
           element={
@@ -58,52 +48,39 @@ function App() {
           } 
         />
 
-        {/* ROTA PROTEGIDA PRINCIPAL: Único ponto de entrada para utilizadores */}
-        <Route 
-          path="/" 
-          element={
-            !user ? <Navigate to="/login" replace /> :
-            user.role === 'admin' ? <Navigate to="/admin" replace /> : 
-            <Dashboard /> /* A tela Dashboard agora gere internamente o que mostrar por plano */
-          } 
-        />
-        
-        {/* ROTA PROTEGIDA: Central de Comando (Admin) */}
+        {/* ROTAS PROTEGIDAS COM SIDEBAR (LAYOUT COMUM) */}
+        <Route element={user ? <MainLayout /> : <Navigate to="/login" replace />}>
+          
+          {/* Dashboard Principal */}
+          <Route 
+            path="/" 
+            element={
+              user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />
+            } 
+          />
+
+          {/* Nova Página de Agentes (Catálogo) */}
+          <Route path="/agentes" element={<Agentes />} />
+
+          {/* Rotas específicas de Agentes (Caso queira páginas separadas no futuro) */}
+          <Route 
+            path="/sombra" 
+            element={
+              ['premium', 'plus', 'ultimate'].includes(user?.plan || '') 
+                ? <div className="p-8"><h1>Agente Sombra Ativo</h1></div> 
+                : <Navigate to="/agentes" replace />
+            } 
+          />
+
+        </Route>
+
+        {/* ROTA ADMIN (Geralmente sem a sidebar de usuário comum) */}
         <Route 
           path="/admin" 
           element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} 
         />
 
-        {/* ROTAS PROTEGIDAS: Agentes de IA (Verificação Estrita de Planos) */}
-        
-        <Route 
-          path="/sombra" 
-          element={
-            user && ['premium', 'plus', 'ultimate'].includes(user.plan) 
-              ? <SombraPage /> 
-              : <Navigate to="/" replace />
-          } 
-        />
-
-        <Route 
-          path="/heranca" 
-          element={
-            user && ['plus', 'ultimate'].includes(user.plan) 
-              ? <HerancaPage /> 
-              : <Navigate to="/" replace />
-          } 
-        />
-
-        <Route 
-          path="/manada" 
-          element={
-            user && ['ultimate'].includes(user.plan) 
-              ? <ManadaPage /> 
-              : <Navigate to="/" replace />
-          } 
-        />
-
-        {/* FALLBACK: Redirecionamento global de segurança */}
+        {/* FALLBACK */}
         <Route 
           path="*" 
           element={
