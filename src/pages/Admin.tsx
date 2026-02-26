@@ -1,20 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { db } from '../api/firebase';
-import { collection, query, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore'; // Adicionado deleteDoc
 import { useAuth } from '../hooks/useAuth';
 import { 
   Users, 
-  LayoutDashboard, 
-  Crown, 
+  LayoutDashboard,  
   LogOut, 
   ShieldAlert,
   Sun,
   Moon,
-  Target,
-  Activity,
   ShieldCheck,
   Search,
-  X
+  MessageSquare,
 } from 'lucide-react';
 import type { UserProfile, PlanLevel } from '../types';
 
@@ -23,14 +20,14 @@ const planLevels: PlanLevel[] = ['basic', 'premium', 'plus', 'ultimate'];
 const AdminPanel: React.FC = () => {
   const { logout, user } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]); // Estado para reportes
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingTickets, setLoadingTickets] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'users'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'tickets'>('overview');
 
-  // Controle de Tema (Dark Mode)
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
-  });
+  // Controle de Tema
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
 
   useEffect(() => {
     if (isDarkMode) {
@@ -42,6 +39,7 @@ const AdminPanel: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  // Busca de Usuários
   const fetchUsers = useCallback(async () => {
     try {
       setLoadingUsers(true);
@@ -59,37 +57,56 @@ const AdminPanel: React.FC = () => {
     }
   }, []);
 
+  // Busca de Tickets (Bugs/Sugestões)
+  const fetchTickets = useCallback(async () => {
+    try {
+      setLoadingTickets(true);
+      const q = query(collection(db, "support_tickets"));
+      const querySnapshot = await getDocs(q);
+      const ticketList = querySnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      }));
+      // Ordenar por data decrescente
+      setTickets(ticketList.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+    } catch (error) {
+      console.error("Erro ao buscar tickets:", error);
+    } finally {
+      setLoadingTickets(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+    if (activeTab === 'tickets') fetchTickets();
+  }, [fetchUsers, fetchTickets, activeTab]);
+
   const updatePlan = async (userId: string, newPlan: PlanLevel) => {
     try {
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, { plan: newPlan });
       await fetchUsers(); 
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-      alert("Falha ao atualizar plano: " + errorMessage);
+    } catch (error) {
+      alert("Erro ao atualizar plano." + error);
     }
   };
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadData = async () => {
-      if (isMounted) await fetchUsers();
-    };
-    loadData();
-    return () => { isMounted = false; };
-  }, [fetchUsers]);
+  const deleteTicket = async (ticketId: string) => {
+    if (window.confirm("Marcar este reporte como resolvido e removê-lo?")) {
+      try {
+        await deleteDoc(doc(db, "support_tickets", ticketId));
+        setTickets(prev => prev.filter(t => t.id !== ticketId));
+      } catch (error) {
+        alert("Erro ao remover ticket." + error);
+      }
+    }
+  };
 
-  // Lógica de Filtragem de Usuários
   const filteredUsers = users.filter(u => {
     const searchLower = searchTerm.toLowerCase();
-    return (
-      u.displayName?.toLowerCase().includes(searchLower) ||
-      u.email?.toLowerCase().includes(searchLower) ||
-      u.plan?.toLowerCase().includes(searchLower)
-    );
+    return u.displayName?.toLowerCase().includes(searchLower) || u.email?.toLowerCase().includes(searchLower);
   });
 
-  // Cálculos de Métricas Globais
   const totalUsers = users.length;
   const globalHoursSaved = users.reduce((acc, curr) => acc + (curr.financialData?.hoursSaved || 0), 0);
   const premiumUsers = users.filter(u => u.plan !== 'basic').length;
@@ -97,8 +114,8 @@ const AdminPanel: React.FC = () => {
   return (
     <div className="flex h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300 overflow-hidden font-sans text-slate-900 dark:text-slate-100">
       
-      {/* ABA LATERAL (SIDEBAR) */}
-      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-colors duration-300 z-10 md:flex">
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between z-10">
         <div>
           <div className="h-20 flex items-center px-8 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-3">
@@ -110,229 +127,151 @@ const AdminPanel: React.FC = () => {
           </div>
 
           <nav className="p-4 space-y-2 mt-4">
-            <button 
-              onClick={() => setActiveTab('overview')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
-                activeTab === 'overview' 
-                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' 
-                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-              }`}
-            >
-              <LayoutDashboard size={18} />
-              <span>Visão Geral</span>
+            <button onClick={() => setActiveTab('overview')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'overview' ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'text-slate-500'}`}>
+              <LayoutDashboard size={18} /> Visão Geral
             </button>
-
-            <button 
-              onClick={() => setActiveTab('users')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
-                activeTab === 'users' 
-                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' 
-                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-              }`}
-            >
-              <Users size={18} />
-              <span>Gestão de Usuários</span>
+            <button onClick={() => setActiveTab('users')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'users' ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'text-slate-500'}`}>
+              <Users size={18} /> Gestão de Usuários
             </button>
-
-            <button 
-              disabled
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 dark:text-slate-600 font-medium text-sm transition-all opacity-70 cursor-not-allowed"
-            >
-              <Crown size={18} />
-              <span>Editar Planos</span>
-              <span className="ml-auto text-[8px] uppercase font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">Em breve</span>
+            <button onClick={() => setActiveTab('tickets')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'tickets' ? 'bg-red-50 dark:bg-red-500/10 text-red-600' : 'text-slate-500'}`}>
+              <MessageSquare size={18} /> Central de Reportes
             </button>
           </nav>
         </div>
 
         <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-          <button 
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-slate-400 font-medium text-sm hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
-          >
-            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-            <span>Mudar Tema</span>
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 text-sm font-medium">
+            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />} Mudar Tema
           </button>
-          <button 
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 dark:text-red-400 font-bold text-sm hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
-          >
-            <LogOut size={18} />
-            <span>Sair do Painel</span>
+          <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 font-bold text-sm">
+            <LogOut size={18} /> Sair
           </button>
         </div>
       </aside>
 
-      {/* ÁREA PRINCIPAL */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header className="md:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-          <span className="font-black text-lg tracking-tight">Admin<span className="text-red-500">IA</span></span>
-          <button onClick={logout} className="text-red-500 p-2"><LogOut size={20} /></button>
-        </header>
-
+      {/* MAIN CONTENT */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-5xl mx-auto space-y-8">
             
-            {/* Cabeçalho Dinâmico */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
-                  {activeTab === 'overview' ? `Central de Comando, ${user?.displayName?.split(' ')[0] || 'Admin'}` : 'Gestão de Usuários'}
-                </h1>
-                <p className="text-slate-500 dark:text-slate-400 mt-1">
-                  {activeTab === 'overview' 
-                    ? 'Monitoramento Global da Plataforma e impacto dos agentes.'
-                    : 'Controle quem tem acesso aos agentes e funcionalidades do Akumol.'}
-                </p>
+            <header>
+              <h1 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white uppercase">
+                {activeTab === 'overview' ? 'Visão Geral' : activeTab === 'users' ? 'Usuários' : 'Reportes & Bugs'}
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400">
+                {activeTab === 'tickets' ? 'Gerencie o feedback e os erros encontrados pelos usuários.' : 'Gestão estratégica da plataforma.'}
+              </p>
+            </header>
+
+            {/* CONTEÚDO DINÂMICO */}
+            {activeTab === 'overview' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-500">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                  <h3 className="text-slate-500 text-xs font-black uppercase mb-2">Usuários</h3>
+                  <p className="text-4xl font-black">{totalUsers}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                  <h3 className="text-slate-500 text-xs font-black uppercase mb-2">Horas Salvas</h3>
+                  <p className="text-4xl font-black text-green-500">{globalHoursSaved}h</p>
+                </div>
+                <div className="bg-indigo-600 p-6 rounded-4xl text-white shadow-xl shadow-indigo-200 dark:shadow-none">
+                  <h3 className="text-indigo-100 text-xs font-black uppercase mb-2">Premium</h3>
+                  <p className="text-4xl font-black">{premiumUsers}</p>
+                </div>
               </div>
-            </div>
+            )}
 
-            {loadingUsers ? (
-              <div className="flex justify-center py-20">
-                 <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : (
-              <>
-                {/* ABA 1: VISÃO GERAL */}
-                {activeTab === 'overview' && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-500">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-4xl shadow-sm transition-colors duration-300">
-                      <div className="flex justify-between items-start mb-6">
-                        <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-2xl"><Users size={24} /></div>
-                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Base de Dados</span>
-                      </div>
-                      <h3 className="font-bold text-slate-800 dark:text-white text-sm">Total de Usuários Ativos</h3>
-                      <p className="text-4xl font-black text-slate-800 dark:text-white mt-1">{totalUsers}</p>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-4xl shadow-sm transition-colors duration-300 relative overflow-hidden">
-                      <div className="relative z-10">
-                        <div className="flex justify-between items-start mb-6">
-                          <div className="p-3 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-2xl"><Target size={24} /></div>
-                          <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Impacto Global</span>
-                        </div>
-                        <h3 className="font-bold text-slate-800 dark:text-white text-sm">Horas de Vida Devolvidas</h3>
-                        <p className="text-4xl font-black text-slate-800 dark:text-white mt-1">{globalHoursSaved} <span className="text-xl text-slate-400">h</span></p>
-                      </div>
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 dark:bg-green-900/10 rounded-full -mr-10 -mt-10 z-0"></div>
-                    </div>
-
-                    <div className="bg-indigo-600 dark:bg-indigo-900/80 p-6 rounded-4xl text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-colors duration-300">
-                      <div className="flex justify-between items-start mb-6">
-                        <div className="p-3 bg-white/20 rounded-2xl"><Crown size={24} className="text-white" /></div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Conversão</span>
-                      </div>
-                      <h3 className="font-bold text-white text-sm">Assinantes Pagantes</h3>
-                      <p className="text-4xl font-black text-white mt-1">{premiumUsers}</p>
-                      <div className="w-full bg-indigo-800/50 h-1.5 rounded-full mt-4 overflow-hidden">
-                        <div className="bg-white h-full transition-all duration-1000" style={{ width: `${totalUsers > 0 ? (premiumUsers/totalUsers)*100 : 0}%` }}></div>
-                      </div>
-                    </div>
+            {activeTab === 'users' && (
+              <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm animate-in fade-in">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                  <div className="relative w-full max-w-xs">
+                    <Search className="absolute left-3 top-3 text-slate-400" size={18} />
+                    <input 
+                      value={searchTerm} 
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Pesquisar..." 
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none text-sm"
+                    />
                   </div>
-                )}
-
-                {/* ABA 2: GESTÃO DE USUÁRIOS */}
-                {activeTab === 'users' && (
-                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden transition-colors duration-300 animate-in fade-in">
-                    
-                    {/* BARRA DE PESQUISA INTEGRADA */}
-                    <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <Activity className="text-indigo-500" />
-                        <h2 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Agentes e Planos</h2>
-                      </div>
-
-                      <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <Search size={18} className="text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Pesquisar por nome ou e-mail..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="block w-full md:w-80 pl-11 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                        />
-                        {searchTerm && (
-                          <button 
-                            onClick={() => setSearchTerm('')}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-red-500 transition-colors"
-                          >
-                            <X size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-widest">
-                          <tr>
-                            <th className="py-4 px-8">Usuário</th>
-                            <th className="py-4 px-8">Plano Atual</th>
-                            <th className="py-4 px-8">Atribuir Nível</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                          {filteredUsers.map(u => (
-                            <tr key={u.uid} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                              <td className="py-5 px-8">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-sm uppercase">
-                                    {u.displayName ? u.displayName.charAt(0) : 'U'}
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-slate-700 dark:text-slate-200">{u.displayName || 'Sem nome'}</p>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{u.email}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-5 px-8">
-                                <div className="flex items-center gap-2">
-                                  <ShieldCheck size={16} className={u.plan === 'basic' ? 'text-slate-400' : 'text-indigo-500'} />
-                                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                                    {u.plan}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="py-5 px-8 flex flex-wrap gap-2">
-                                {planLevels.map(p => (
-                                  <button 
-                                    key={p}
-                                    onClick={() => updatePlan(u.uid, p)}
-                                    className={`text-[10px] px-4 py-2 rounded-xl font-bold uppercase tracking-wider transition-all ${
-                                      u.plan === p 
-                                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' 
-                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-500 dark:hover:text-white'
-                                    }`}
-                                  >
-                                    {p}
-                                  </button>
-                                ))}
-                              </td>
-                            </tr>
+                </div>
+                <table className="w-full">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-400">
+                    <tr>
+                      <th className="p-6 text-left">Usuário</th>
+                      <th className="p-6 text-left">Plano</th>
+                      <th className="p-6 text-left">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredUsers.map(u => (
+                      <tr key={u.uid} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="p-6">
+                          <p className="font-bold text-sm">{u.displayName}</p>
+                          <p className="text-xs text-slate-400">{u.email}</p>
+                        </td>
+                        <td className="p-6">
+                          <span className="text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{u.plan}</span>
+                        </td>
+                        <td className="p-6 flex gap-1">
+                          {planLevels.map(p => (
+                            <button key={p} onClick={() => updatePlan(u.uid, p)} className={`text-[9px] font-bold px-2 py-1 rounded uppercase transition-all ${u.plan === p ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-indigo-500 hover:text-white'}`}>
+                              {p}
+                            </button>
                           ))}
-                          
-                          {filteredUsers.length === 0 && (
-                            <tr>
-                              <td colSpan={3} className="py-20 text-center">
-                                <div className="flex flex-col items-center justify-center gap-3">
-                                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-full">
-                                    <Search size={32} className="text-slate-300 dark:text-slate-700" />
-                                  </div>
-                                  <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">
-                                    {searchTerm ? `Nenhum resultado para "${searchTerm}"` : "Nenhum usuário encontrado."}
-                                  </p>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {activeTab === 'tickets' && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {loadingTickets ? (
+                  <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>
+                ) : tickets.length === 0 ? (
+                  <div className="bg-white dark:bg-slate-900 p-20 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-800 text-center">
+                    <p className="text-slate-400 font-bold">Nenhum ticket aberto.</p>
                   </div>
+                ) : (
+                  tickets.map(ticket => (
+                    <div key={ticket.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col md:flex-row justify-between gap-4 group">
+                      <div className="space-y-4 flex-1">
+                        <div className="flex items-center gap-3">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                            ticket.type === 'erro' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 
+                            ticket.type === 'sugestao' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' : 
+                            'bg-amber-100 text-amber-600 dark:bg-amber-900/30'
+                          }`}>
+                            {ticket.type}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400">{ticket.createdAt?.toDate().toLocaleString('pt-PT')}</span>
+                        </div>
+                        
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl">
+                          <p className="text-sm text-slate-700 dark:text-slate-300 font-medium italic leading-relaxed">"{ticket.message}"</p>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                          <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 text-[10px]">
+                            {ticket.userName?.charAt(0)}
+                          </div>
+                          {ticket.userName} <span className="opacity-50">• {ticket.userEmail}</span>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => deleteTicket(ticket.id)}
+                        className="self-start md:self-center p-4 text-slate-300 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-500/10 rounded-2xl transition-all"
+                        title="Marcar como resolvido"
+                      >
+                        <ShieldCheck size={24} />
+                      </button>
+                    </div>
+                  ))
                 )}
-              </>
+              </div>
             )}
 
           </div>
