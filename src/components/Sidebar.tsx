@@ -4,7 +4,8 @@ import {
   LogOut, 
   ShieldCheck, 
   MessageSquareText,
-  TrendingUp 
+  TrendingUp,
+  LifeBuoy 
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -13,12 +14,12 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Organizado para o Conselheiro ser o centro visual
   const menuItems = [
     { icon: LayoutDashboard, label: 'Início', path: '/' },
     { icon: TrendingUp, label: 'Evolução', path: '/evolucao' },
     { icon: MessageSquareText, label: 'Conselheiro', path: '/conselheiro', main: true },
     { icon: ShieldCheck, label: 'Agentes', path: '/agentes' },
+    { icon: LifeBuoy, label: 'Suporte', path: '/suporte' }, // Novo item de Suporte
     { icon: LogOut, label: 'Sair', path: 'logout', action: logout }
   ];
 
@@ -26,7 +27,6 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* DESKTOP SIDEBAR */}
       <aside className="hidden lg:flex w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex-col transition-all duration-300 h-screen sticky top-0">
         <div className="p-6 flex items-center gap-3">
           <div className="bg-indigo-600 p-2 rounded-xl">
@@ -67,7 +67,6 @@ const Sidebar = () => {
         </div>
       </aside>
 
-      {/* MOBILE BOTTOM NAV - DESIGN REFINADO */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-2 flex justify-around items-center z-50 h-16">
         {menuItems.map((item) => (
           <button

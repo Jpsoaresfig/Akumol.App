@@ -16,3 +16,15 @@ export interface UserProfile {
     weatherAutoSave: boolean;
   };
 }
+
+// Adicione ao src/types/index.ts
+export interface SupportTicket {
+  id?: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  type: 'error' | 'suggestion' | 'question';
+  message: string;
+  status: 'open' | 'resolved';
+  createdAt: Date;
+}

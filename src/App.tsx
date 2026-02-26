@@ -7,6 +7,7 @@ import Agentes from './pages/agentes/Agentesmain';
 import Conselheiro from './pages/Counselor/CounselorChat'; 
 import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
+import Support from './pages/suport/Support'; 
 
 // --- COMPONENTE DE LAYOUT ---
 const MainLayout = () => (
@@ -44,14 +45,15 @@ function App() {
         />
 
         <Route element={user ? <MainLayout /> : <Navigate to="/login" replace />}>
-          {/* Rota Inicial: Se for admin vai para painel, se não vai para o Dashboard limpo */}
+          {/* Rota Inicial: Se for admin vai para painel, se não vai para o Dashboard */}
           <Route path="/" element={user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />} />
           
-          {/* Nova Rota de Métricas/Evolução */}
           <Route path="/evolucao" element={<Evolucao />} />
-          
           <Route path="/agentes" element={<Agentes />} />
           <Route path="/conselheiro" element={<Conselheiro />} />
+          
+          {/* NOVA ROTA DE SUPORTE */}
+          <Route path="/suporte" element={<Support />} />
           
           <Route 
             path="/sombra" 
@@ -59,6 +61,7 @@ function App() {
           />
         </Route>
 
+        {/* PAINEL ADMINISTRATIVO */}
         <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
         
         {/* Redirecionamento Global */}
