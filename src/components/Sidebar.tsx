@@ -14,19 +14,19 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Itens principais de navegação (Removido o Suporte daqui)
   const menuItems = [
     { icon: LayoutDashboard, label: 'Início', path: '/' },
     { icon: TrendingUp, label: 'Evolução', path: '/evolucao' },
     { icon: MessageSquareText, label: 'Conselheiro', path: '/conselheiro', main: true },
     { icon: ShieldCheck, label: 'Agentes', path: '/agentes' },
-    { icon: LifeBuoy, label: 'Suporte', path: '/suporte' }, // Novo item de Suporte
-    { icon: LogOut, label: 'Sair', path: 'logout', action: logout }
   ];
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <>
+      {/* SIDEBAR DESKTOP */}
       <aside className="hidden lg:flex w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex-col transition-all duration-300 h-screen sticky top-0">
         <div className="p-6 flex items-center gap-3">
           <div className="bg-indigo-600 p-2 rounded-xl">
@@ -38,7 +38,7 @@ const Sidebar = () => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4">
-          {menuItems.filter(i => i.path !== 'logout').map((item) => (
+          {menuItems.map((item) => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
@@ -56,22 +56,38 @@ const Sidebar = () => {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+        {/* RODAPÉ DA SIDEBAR - ÁREA DISCRETA */}
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-1">
+          {/* BOTÃO DE SUPORTE DISCRETO */}
+          <button
+            onClick={() => navigate('/suporte')}
+            className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-medium transition-all ${
+              isActive('/suporte')
+                ? 'text-indigo-600 bg-indigo-50/50 dark:bg-indigo-500/5'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <LifeBuoy size={16} />
+            <span>Reportar problema</span>
+          </button>
+
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 p-4 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-2xl transition-all"
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
           >
-            <LogOut size={24} />
+            <LogOut size={20} />
             <span className="font-bold text-sm">Sair</span>
           </button>
         </div>
       </aside>
 
+      {/* NAVEGAÇÃO MOBILE */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-2 flex justify-around items-center z-50 h-16">
+        {/* Ícones principais */}
         {menuItems.map((item) => (
           <button
             key={item.path}
-            onClick={() => item.action ? item.action() : navigate(item.path)}
+            onClick={() => navigate(item.path)}
             className={`flex flex-col items-center justify-center transition-all ${
               item.main 
                 ? 'bg-indigo-600 text-white p-3 rounded-2xl shadow-indigo-300 dark:shadow-none -mt-8 border-4 border-[#F8FAFC] dark:border-slate-950 scale-110' 
@@ -84,6 +100,17 @@ const Sidebar = () => {
             {!item.main && <span className="text-[9px] font-bold mt-1">{item.label}</span>}
           </button>
         ))}
+        
+        {/* BOTÃO DE SUPORTE NO MOBILE (Apenas ícone e menor) */}
+        <button
+          onClick={() => navigate('/suporte')}
+          className={`flex flex-col items-center justify-center transition-all ${
+            isActive('/suporte') ? 'text-indigo-600' : 'text-slate-400 opacity-60'
+          }`}
+        >
+          <LifeBuoy size={18} />
+          <span className="text-[8px] font-bold mt-1">Ajuda</span>
+        </button>
       </nav>
     </>
   );

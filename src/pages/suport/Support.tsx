@@ -28,7 +28,7 @@ const Support = () => {
       setMessage('');
       setTimeout(() => setSent(false), 5000);
     } catch (error) {
-      alert("Erro ao enviar reporte. Tente novamente.");
+      alert("Erro ao enviar reporte. Tente novamente." + error);
     } finally {
       setLoading(false);
     }
