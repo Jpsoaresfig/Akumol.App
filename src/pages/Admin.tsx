@@ -121,7 +121,7 @@ const AdminPanel: React.FC = () => {
   return (
     <div className="flex h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
       {/* SIDEBAR */}
-      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-4 z-10 hidden md:flex">
+      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-4 z-10 md:flex">
         <div className="space-y-8">
           <div className="flex items-center gap-3 px-4">
             <div className="p-2 bg-red-600 rounded-lg text-white"><ShieldAlert size={20} /></div>
@@ -177,11 +177,11 @@ const AdminPanel: React.FC = () => {
               {/* ABA: VISÃO GERAL */}
               {activeTab === 'overview' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in">
-                  <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                  <div className="bg-white dark:bg-slate-900 p-8 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-sm">
                     <h3 className="text-slate-400 text-xs font-black uppercase tracking-widest mb-2">Total de Guardiões</h3>
                     <p className="text-5xl font-black">{totalUsers}</p>
                   </div>
-                  <div className="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-200 dark:shadow-none">
+                  <div className="bg-indigo-600 p-8 rounded-4xl text-white shadow-xl shadow-indigo-200 dark:shadow-none">
                     <h3 className="text-indigo-200 text-xs font-black uppercase tracking-widest mb-2">Usuários Premium</h3>
                     <p className="text-5xl font-black">{premiumUsers}</p>
                   </div>
@@ -206,7 +206,7 @@ const AdminPanel: React.FC = () => {
                     </div>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[600px]">
+                    <table className="w-full min-w-150">
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                         {filteredUsers.map(u => (
                           <tr key={u.uid} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
@@ -243,7 +243,7 @@ const AdminPanel: React.FC = () => {
                     </div>
                   ) : (
                     tickets.map(t => (
-                      <div key={t.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between gap-4 group shadow-sm">
+                      <div key={t.id} className="bg-white dark:bg-slate-900 p-6 rounded-4xl border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between gap-4 group shadow-sm">
                         <div className="space-y-3 flex-1">
                           <div className="flex items-center gap-3">
                             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${t.type === 'erro' || t.type === 'error' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30'}`}>
