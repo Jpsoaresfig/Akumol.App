@@ -100,7 +100,7 @@ const Conselheiro: React.FC = () => {
     }));
 
     try {
-      // Endpoint oficial do Gemini 1.5 Flash (Rápido e excelente para chat)
+      // Endpoint oficial do Gemini
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
       
       const response = await fetch(url, {
@@ -130,11 +130,14 @@ const Conselheiro: React.FC = () => {
 
       setMessages((prev) => [...prev, { role: 'assistant', content: aiResponseText }]);
 
-    } catch (error: any) {
-      console.error("Erro na API do Gemini:", error);
+    } catch (error: unknown) {
+      // O ERRO FEIO AINDA APARECE NO CONSOLE PARA VOCÊ (PROGRAMADOR) VER
+      console.error("Erro técnico na API do Gemini:", error);
+      
+      // MAS O USUÁRIO VÊ ESSA MENSAGEM BONITINHA
       setMessages((prev) => [...prev, { 
         role: 'assistant', 
-        content: `❌ Ocorreu um erro ao falar com o Gemini: ${error.message}` 
+        content: `Ops! Nossos servidores estão com um probleminha técnico no momento. 🛠️ \n\nJá já a gente volta com tudo! Tente enviar sua mensagem novamente em alguns minutos.` 
       }]);
     } finally {
       setIsLoading(false);

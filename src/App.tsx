@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Evolucao from './pages/evolutions/Evolution'; 
 import Agentes from './pages/agentes/Agentesmain'; 
+import AgenteSombra from './pages/agentes/AgenteSombra'; // Importação do novo Agente
 import Conselheiro from './pages/Counselor/CounselorChat'; 
 import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
@@ -50,15 +51,21 @@ function App() {
           
           <Route path="/evolucao" element={<Evolucao />} />
           <Route path="/agentes" element={<Agentes />} />
+          
+          {/* ROTA DO AGENTE SOMBRA (PROTEGIDA POR PLANO) */}
+          <Route 
+            path="/agentes/sombra" 
+            element={
+              user && ['premium', 'plus', 'ultimate'].includes(user.plan || '') 
+                ? <AgenteSombra /> 
+                : <Navigate to="/agentes" replace />
+            } 
+          />
+
           <Route path="/conselheiro" element={<Conselheiro />} />
           
-          {/* NOVA ROTA DE SUPORTE */}
+          {/* ROTA DE SUPORTE */}
           <Route path="/suporte" element={<Support />} />
-          
-          <Route 
-            path="/sombra" 
-            element={user && ['premium', 'plus', 'ultimate'].includes(user.plan) ? <div className="p-8"><h1>Agente Sombra Ativo</h1></div> : <Navigate to="/agentes" replace />} 
-          />
         </Route>
 
         {/* PAINEL ADMINISTRATIVO */}
