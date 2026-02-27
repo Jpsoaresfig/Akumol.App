@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
+  Home, 
   LogOut, 
   ShieldCheck, 
   MessageSquareText,
@@ -16,7 +16,7 @@ const Sidebar = () => {
 
   // Itens principais de navegação (Removido o Suporte daqui)
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Início', path: '/' },
+    { icon: Home, label: 'Início', path: '/' },
     { icon: TrendingUp, label: 'Evolução', path: '/evolucao' },
     { icon: MessageSquareText, label: 'Conselheiro', path: '/conselheiro', main: true },
     { icon: ShieldCheck, label: 'Agentes', path: '/agentes' },
