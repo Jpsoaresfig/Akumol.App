@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { 
-  ShieldCheck, Zap, TrendingUp, Users, LogOut, 
+  ShieldCheck, Zap, TrendingUp, TrendingDown, Users, LogOut, 
   ArrowUpRight, Sun, Moon, Lock, CreditCard, Target, Crown, 
-  Clock, AlertCircle, X
+  Clock, AlertCircle, X, ChevronDown
 } from 'lucide-react';
 
-// --- IMPORTAÇÕES DO FIREBASE ---
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../api/firebase';
+
+// --- TIPOS DE TEMPO PARA O FILTRO ---
+type Period = 'yesterday' | 'lastWeek' | 'lastMonth' | 'sixMonths' | 'lastYear';
 
 // --- SUB-COMPONENTES DE INTERFACE ---
 
@@ -133,26 +135,25 @@ const Dashboard: React.FC = () => {
   const { user, logout, loading } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
 
-  // O saldo local começa em 0 e será atualizado via useEffect assim que o usuário carregar
   const [balance, setBalance] = useState(0); 
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('lastMonth'); 
   
-  // Estados para Depósito
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [depositValue, setDepositValue] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false); // Para mostrar "Carregando" no botão
+  const [isProcessing, setIsProcessing] = useState(false); 
 
-  // Estados para Retirada
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawValue, setWithdrawValue] = useState('');
   const [withdrawError, setWithdrawError] = useState('');
 
-  // Sincroniza o saldo local com o banco de dados
+  // Sincroniza o saldo local com o Firebase
   useEffect(() => {
     if (user?.financialData?.balance !== undefined) {
       setBalance(user.financialData.balance);
     }
-  }, [user]); // Atualiza sempre que o objeto user do Firebase mudar
+  }, [user]); 
 
+  // Gere a mudança de tema (Dark Mode)
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
@@ -162,7 +163,6 @@ const Dashboard: React.FC = () => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
-  // --- FUNÇÃO PARA LIDAR COM O DEPÓSITO NO FIREBASE ---
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(depositValue.replace(',', '.')); 
@@ -173,26 +173,22 @@ const Dashboard: React.FC = () => {
       
       try {
         const userRef = doc(db, 'users', user.uid);
-        // Usamos setDoc com merge: true para atualizar o saldo sem apagar os outros dados financeiros
         await setDoc(userRef, {
-          financialData: {
-            balance: newBalance
-          }
+          financialData: { balance: newBalance }
         }, { merge: true });
         
-        setBalance(newBalance); // Atualiza na tela imediatamente
+        setBalance(newBalance); 
         setShowDepositModal(false); 
         setDepositValue(''); 
       } catch (error) {
         console.error("Erro ao depositar:", error);
-        alert("Ocorreu um erro ao processar o depósito. Tente novamente.");
+        alert("Ocorreu um erro ao processar o depósito.");
       } finally {
         setIsProcessing(false);
       }
     }
   };
 
-  // --- FUNÇÃO PARA LIDAR COM A RETIRADA NO FIREBASE ---
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(withdrawValue.replace(',', '.')); 
@@ -205,12 +201,10 @@ const Dashboard: React.FC = () => {
         try {
           const userRef = doc(db, 'users', user.uid);
           await setDoc(userRef, {
-            financialData: {
-              balance: newBalance
-            }
+            financialData: { balance: newBalance }
           }, { merge: true });
 
-          setBalance(newBalance); // Atualiza na tela imediatamente
+          setBalance(newBalance);
           setShowWithdrawModal(false); 
           setWithdrawValue(''); 
           setWithdrawError('');
@@ -226,10 +220,38 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // --- LÓGICA DE COMPARAÇÃO DE TENDÊNCIA E PATRIMÓNIO ---
+  // O Património Total real é a soma de tudo (Investido + Saldo)
+  const totalInvested = user?.financialData?.totalInvested || 0;
+  const patrimonioTotal = totalInvested + balance; 
+  
+  // O mock de histórico acompanha o Património Total (A ser substituído por dados do Firebase no futuro)
+  const mockHistory: Record<Period, number> = {
+    yesterday: patrimonioTotal * 0.995,  
+    lastWeek: patrimonioTotal * 0.98,    
+    lastMonth: patrimonioTotal * 0.916,  
+    sixMonths: patrimonioTotal * 0.85,   
+    lastYear: patrimonioTotal * 1.05,    
+  };
+
+  const pastValue = user?.financialData?.history?.[selectedPeriod] || mockHistory[selectedPeriod] || patrimonioTotal;
+  
+  const diffInvested = patrimonioTotal - pastValue;
+  const percentChange = pastValue > 0 ? (diffInvested / pastValue) * 100 : 0;
+  const isPositiveTrend = percentChange >= 0;
+
+  const periodLabels: Record<Period, string> = {
+    yesterday: 'desde ontem',
+    lastWeek: 'esta semana',
+    lastMonth: 'este mês',
+    sixMonths: 'em 6 meses',
+    lastYear: 'este ano'
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
       <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-indigo-600 font-black animate-pulse uppercase tracking-widest text-xs">Sincronizando Guardião...</p>
+      <p className="text-indigo-600 font-black animate-pulse uppercase tracking-widest text-xs">A Sincronizar Guardião...</p>
     </div>
   );
 
@@ -271,14 +293,40 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-10 rounded-4xl md:rounded-[2.5rem] shadow-sm flex flex-col justify-between relative overflow-hidden">
             <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Património Total</p>
-              <h2 className="text-3xl md:text-5xl font-black text-slate-800 dark:text-white tracking-tighter">
-                {formatCurrency(user?.financialData?.totalInvested || 0)}
-              </h2>
-              <div className="flex items-center gap-2 mt-4 text-emerald-500 font-bold text-xs md:text-sm">
-                <TrendingUp size={16} />
-                <span>+ 8.4% este mês</span>
+              
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Património Total</p>
+                
+                {/* --- FILTRO DE TEMPO NOVO --- */}
+                <div className="relative inline-flex">
+                  <select 
+                    value={selectedPeriod}
+                    onChange={(e) => setSelectedPeriod(e.target.value as Period)}
+                    className="appearance-none bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500 dark:text-slate-300 uppercase tracking-widest px-3 py-1.5 pr-8 rounded-full outline-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <option value="yesterday">Ontem</option>
+                    <option value="lastWeek">Semana Passada</option>
+                    <option value="lastMonth">Mês Passado</option>
+                    <option value="sixMonths">6 Meses Atrás</option>
+                    <option value="lastYear">1 Ano Atrás</option>
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                </div>
               </div>
+
+              {/* VALOR DO PATRIMÓNIO ATUALIZADO (SOMA) */}
+              <h2 className="text-3xl md:text-5xl font-black text-slate-800 dark:text-white tracking-tighter mt-1">
+                {formatCurrency(patrimonioTotal)}
+              </h2>
+              
+              {/* --- TENDÊNCIA DINÂMICA (VERDE OU VERMELHO) --- */}
+              <div className={`flex items-center gap-2 mt-4 font-bold text-xs md:text-sm ${isPositiveTrend ? 'text-emerald-500' : 'text-red-500'}`}>
+                {isPositiveTrend ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                <span>
+                  {isPositiveTrend ? '+' : ''}{percentChange.toFixed(1)}% {periodLabels[selectedPeriod]}
+                </span>
+              </div>
+
             </div>
             
             <div className="mt-8 flex flex-row gap-3 relative z-10">
@@ -304,6 +352,7 @@ const Dashboard: React.FC = () => {
 
           <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-8 rounded-4xl shadow-sm flex flex-col justify-center">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Saldo em Conta</p>
+            {/* VALOR DO SALDO */}
             <h2 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white leading-tight">
               {formatCurrency(balance)} 
             </h2>

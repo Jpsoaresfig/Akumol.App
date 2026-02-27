@@ -11,6 +11,14 @@ export interface UserProfile {
     savingsRatio: number;
     totalInvested: number;
     balance: number;
+
+    history?: {
+      yesterday?: number;
+      lastWeek?: number;
+      lastMonth?: number;
+      sixMonths?: number;
+      lastYear?: number;
+  };
   };
   preferences: {
     dopamineMode: boolean;
