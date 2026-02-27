@@ -10,6 +10,7 @@ export interface UserProfile {
     hoursSaved: number;
     savingsRatio: number;
     totalInvested: number;
+    balance: number;
   };
   preferences: {
     dopamineMode: boolean;

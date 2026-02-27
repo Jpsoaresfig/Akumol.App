@@ -3,8 +3,12 @@ import { useAuth } from '../hooks/useAuth';
 import { 
   ShieldCheck, Zap, TrendingUp, Users, LogOut, 
   ArrowUpRight, Sun, Moon, Lock, CreditCard, Target, Crown, 
-  Clock, AlertCircle 
+  Clock, AlertCircle, X
 } from 'lucide-react';
+
+// --- IMPORTAÇÕES DO FIREBASE ---
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../api/firebase';
 
 // --- SUB-COMPONENTES DE INTERFACE ---
 
@@ -129,6 +133,26 @@ const Dashboard: React.FC = () => {
   const { user, logout, loading } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
 
+  // O saldo local começa em 0 e será atualizado via useEffect assim que o usuário carregar
+  const [balance, setBalance] = useState(0); 
+  
+  // Estados para Depósito
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositValue, setDepositValue] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false); // Para mostrar "Carregando" no botão
+
+  // Estados para Retirada
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawValue, setWithdrawValue] = useState('');
+  const [withdrawError, setWithdrawError] = useState('');
+
+  // Sincroniza o saldo local com o banco de dados
+  useEffect(() => {
+    if (user?.financialData?.balance !== undefined) {
+      setBalance(user.financialData.balance);
+    }
+  }, [user]); // Atualiza sempre que o objeto user do Firebase mudar
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
@@ -136,6 +160,70 @@ const Dashboard: React.FC = () => {
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
+  // --- FUNÇÃO PARA LIDAR COM O DEPÓSITO NO FIREBASE ---
+  const handleDeposit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(depositValue.replace(',', '.')); 
+    
+    if (amount > 0 && user?.uid) {
+      setIsProcessing(true);
+      const newBalance = balance + amount;
+      
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        // Usamos setDoc com merge: true para atualizar o saldo sem apagar os outros dados financeiros
+        await setDoc(userRef, {
+          financialData: {
+            balance: newBalance
+          }
+        }, { merge: true });
+        
+        setBalance(newBalance); // Atualiza na tela imediatamente
+        setShowDepositModal(false); 
+        setDepositValue(''); 
+      } catch (error) {
+        console.error("Erro ao depositar:", error);
+        alert("Ocorreu um erro ao processar o depósito. Tente novamente.");
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+  };
+
+  // --- FUNÇÃO PARA LIDAR COM A RETIRADA NO FIREBASE ---
+  const handleWithdraw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(withdrawValue.replace(',', '.')); 
+    
+    if (amount > 0 && user?.uid) {
+      if (amount <= balance) {
+        setIsProcessing(true);
+        const newBalance = balance - amount;
+        
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          await setDoc(userRef, {
+            financialData: {
+              balance: newBalance
+            }
+          }, { merge: true });
+
+          setBalance(newBalance); // Atualiza na tela imediatamente
+          setShowWithdrawModal(false); 
+          setWithdrawValue(''); 
+          setWithdrawError('');
+        } catch (error) {
+          console.error("Erro ao resgatar:", error);
+          setWithdrawError("Erro de conexão. Tente novamente.");
+        } finally {
+          setIsProcessing(false);
+        }
+      } else {
+        setWithdrawError('Saldo insuficiente para este resgate.');
+      }
+    }
   };
 
   if (loading) return (
@@ -151,7 +239,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 p-4 md:p-8 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-24 lg:pb-8">
       
-      {/* HEADER ADAPTADO */}
+      {/* HEADER */}
       <header className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6">
         <div className="w-full sm:w-auto">
           <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-800 dark:text-white leading-none">Olá, {userName}</h1>
@@ -179,7 +267,7 @@ const Dashboard: React.FC = () => {
 
       <main className="max-w-7xl mx-auto space-y-6">
         
-        {/* BLOCO DE PATRIMÓNIO - RESPONSIVO */}
+        {/* BLOCO DE PATRIMÓNIO */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-10 rounded-4xl md:rounded-[2.5rem] shadow-sm flex flex-col justify-between relative overflow-hidden">
             <div className="relative z-10">
@@ -194,10 +282,16 @@ const Dashboard: React.FC = () => {
             </div>
             
             <div className="mt-8 flex flex-row gap-3 relative z-10">
-              <button className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-4 rounded-2xl font-bold text-xs md:text-sm active:scale-95 transition-all">
+              <button 
+                onClick={() => setShowDepositModal(true)}
+                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-4 rounded-2xl font-bold text-xs md:text-sm active:scale-95 transition-all"
+              >
                 Depositar
               </button>
-              <button className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-4 rounded-2xl font-bold text-xs md:text-sm active:scale-95 transition-all">
+              <button 
+                onClick={() => { setShowWithdrawModal(true); setWithdrawError(''); }}
+                className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-4 rounded-2xl font-bold text-xs md:text-sm active:scale-95 transition-all"
+              >
                 Retirar
               </button>
             </div>
@@ -211,7 +305,7 @@ const Dashboard: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-8 rounded-4xl shadow-sm flex flex-col justify-center">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Saldo em Conta</p>
             <h2 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white leading-tight">
-              {formatCurrency(1250.45)} 
+              {formatCurrency(balance)} 
             </h2>
             <p className="text-[10px] text-slate-400 mt-2 font-medium italic">Disponível para transações</p>
           </div>
@@ -264,7 +358,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* COLUNA LATERAL - EM MOBILE FICA NO FINAL DA PÁGINA */}
           <div className="lg:col-span-4 space-y-6">
             <SentinelaWidget hourlyRate={user?.financialData?.totalInvested ? 60 : 40} />
 
@@ -281,6 +374,99 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* --- MODAL DE DEPÓSITO --- */}
+      {showDepositModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-black text-slate-800 dark:text-white">Fazer Depósito</h3>
+              <button 
+                onClick={() => setShowDepositModal(false)} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+                disabled={isProcessing}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleDeposit} className="space-y-6">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Valor do Depósito (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={depositValue}
+                  onChange={(e) => setDepositValue(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-4 text-2xl font-black text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  required
+                  autoFocus
+                  disabled={isProcessing}
+                />
+              </div>
+              
+              <button
+                type="submit"
+                disabled={isProcessing}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all text-sm flex justify-center items-center gap-2"
+              >
+                {isProcessing ? <Clock size={18} className="animate-spin" /> : "Confirmar Depósito"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL DE RETIRADA --- */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-black text-slate-800 dark:text-white">Resgatar Saldo</h3>
+              <button 
+                onClick={() => setShowWithdrawModal(false)} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+                disabled={isProcessing}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleWithdraw} className="space-y-6">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Valor do Resgate (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={withdrawValue}
+                  onChange={(e) => setWithdrawValue(e.target.value)}
+                  placeholder="0.00"
+                  className={`w-full bg-slate-50 dark:bg-slate-800 border ${withdrawError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-slate-500'} rounded-xl px-4 py-4 text-2xl font-black text-slate-800 dark:text-white outline-none focus:ring-2 transition-all`}
+                  required
+                  autoFocus
+                  disabled={isProcessing}
+                />
+                {withdrawError && (
+                  <p className="text-red-500 text-xs font-bold mt-2 animate-in slide-in-from-top-1">{withdrawError}</p>
+                )}
+                <p className="text-slate-500 text-xs mt-2">Saldo disponível: {formatCurrency(balance)}</p>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={isProcessing}
+                className="w-full bg-slate-800 dark:bg-slate-100 hover:bg-slate-900 disabled:bg-slate-600 dark:hover:bg-white text-white dark:text-slate-900 font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all text-sm flex justify-center items-center gap-2"
+              >
+                {isProcessing ? <Clock size={18} className="animate-spin text-slate-400" /> : "Confirmar Resgate"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
