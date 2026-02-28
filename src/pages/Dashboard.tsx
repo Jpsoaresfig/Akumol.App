@@ -1,521 +1,260 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { 
-  ShieldCheck, Zap, TrendingUp, TrendingDown, Users, LogOut, 
-  ArrowUpRight, Sun, Moon, Lock, CreditCard, Target, Crown, 
-  Clock, AlertCircle, X, ChevronDown
+  ShieldCheck, Zap, TrendingUp, Users, LogOut, 
+  ArrowUpRight, Sun, Moon, Target, 
+  Clock, X
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Adicionado para navegar até o agente
 
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../api/firebase';
 
-// --- TIPOS DE TEMPO PARA O FILTRO ---
 type Period = 'yesterday' | 'lastWeek' | 'lastMonth' | 'sixMonths' | 'lastYear';
 
-// --- SUB-COMPONENTES DE INTERFACE ---
-
-const SentinelaWidget = ({ hourlyRate = 50 }: { hourlyRate?: number }) => {
+const SentinelaWidget = ({ hourlyRate }: { hourlyRate: number }) => {
   const [url, setUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<{ price: number; lifeHours: number } | null>(null);
-  const [isLocked, setIsLocked] = useState(false);
 
   const analisarCompra = () => {
     if (!url) return;
     setIsAnalyzing(true);
-    
     setTimeout(() => {
-      const precoSimulado = Math.floor(Math.random() * (800 - 100 + 1)) + 100; 
-      const horas = precoSimulado / hourlyRate;
-      
-      setAnalysis({
-        price: precoSimulado,
-        lifeHours: parseFloat(horas.toFixed(1))
-      });
+      const precoSimulado = Math.floor(Math.random() * 500) + 100; 
+      setAnalysis({ price: precoSimulado, lifeHours: parseFloat((precoSimulado / hourlyRate).toFixed(1)) });
       setIsAnalyzing(false);
-    }, 1500);
-  };
-
-  const handleLock = () => {
-    setIsLocked(true);
+    }, 1200);
   };
 
   return (
-    <div className="bg-indigo-600 dark:bg-indigo-900/80 p-6 md:p-8 rounded-4xl md:rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 dark:shadow-none transition-all duration-300">
+    <div className="bg-indigo-600 dark:bg-indigo-900/80 p-6 md:p-8 rounded-[2.5rem] text-white shadow-xl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <ShieldCheck size={20} className="text-indigo-200 dark:text-indigo-300" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 dark:text-indigo-300">Agente Sentinela</span>
+          <ShieldCheck size={20} className="text-indigo-200" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Agente Sentinela</span>
         </div>
-        {isLocked && <span className="bg-red-500 text-[8px] font-bold px-2 py-1 rounded-full animate-pulse">BLOQUEIO ATIVO</span>}
       </div>
-
-      {!analysis && !isLocked ? (
+      {!analysis ? (
         <>
-          <p className="text-xl md:text-2xl font-bold leading-tight tracking-tight">Filtro de 72h Ativo</p>
-          <div className="mt-6 flex flex-col sm:flex-row gap-2">
+          <p className="text-xl font-bold leading-tight">Filtro de 72h</p>
+          <div className="mt-6 flex gap-2">
             <input 
-              type="text" 
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={isAnalyzing ? "Analisando..." : "Link do produto..."} 
-              disabled={isAnalyzing}
-              className="w-full bg-indigo-500/50 dark:bg-indigo-800/50 border border-indigo-400/30 dark:border-indigo-700/50 rounded-xl px-4 py-3 text-sm outline-none placeholder:text-indigo-300 disabled:opacity-50" 
+              type="text" value={url} onChange={(e) => setUrl(e.target.value)}
+              placeholder="Link do produto..." 
+              className="w-full bg-indigo-500/50 rounded-xl px-4 py-3 text-sm outline-none" 
             />
-            <button 
-              onClick={analisarCompra}
-              disabled={isAnalyzing || !url}
-              className="w-full sm:w-auto flex justify-center bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 p-4 rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-            >
+            <button onClick={analisarCompra} className="bg-white text-indigo-600 p-4 rounded-xl">
               {isAnalyzing ? <Clock size={20} className="animate-spin" /> : <ArrowUpRight size={20} />}
             </button>
           </div>
         </>
-      ) : isLocked ? (
-        <div className="text-center py-4 animate-in zoom-in duration-300">
-          <AlertCircle size={40} className="mx-auto mb-3 text-indigo-200" />
-          <p className="font-bold text-lg">Desejo em Maturação</p>
-          <p className="text-xs text-indigo-200 mt-1">Volte em 72 horas para decidir.</p>
-          <button 
-            onClick={() => {setAnalysis(null); setIsLocked(false); setUrl('');}}
-            className="mt-6 text-[10px] uppercase font-black tracking-widest opacity-60 hover:opacity-100 p-2"
-          >
-            Cancelar Bloqueio
-          </button>
-        </div>
       ) : (
-        <div className="animate-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center gap-2 mb-2 text-indigo-200">
-            <Clock size={14} />
-            <span className="text-[10px] font-bold uppercase">Custo de Vida Real</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl font-black tracking-tighter">
-            {analysis?.lifeHours} Horas
-          </h2>
-          <p className="text-xs text-indigo-200 mt-2 leading-relaxed">
-            Equivale a <span className="text-white font-bold">{Math.ceil((analysis?.lifeHours || 0) / 8)} dias</span> de trabalho.
-          </p>
-          
-          <div className="mt-6 flex flex-col gap-2">
-            <button 
-              onClick={handleLock}
-              className="w-full bg-white text-indigo-600 font-bold py-4 rounded-xl text-sm shadow-lg active:scale-95 transition-transform"
-            >
-              Ativar Bloqueio de 72h
-            </button>
-            <button 
-              onClick={() => {setAnalysis(null); setUrl('');}}
-              className="w-full bg-indigo-500/30 text-white font-bold py-3 rounded-xl text-xs opacity-80 hover:opacity-100 transition-opacity"
-            >
-              Assumir Risco e Comprar
-            </button>
-          </div>
+        <div className="animate-in fade-in">
+          <h2 className="text-3xl font-black">{analysis.lifeHours}h de Vida</h2>
+          <p className="text-xs text-indigo-200 mt-2">Isso custa {analysis.price} BRL do seu tempo.</p>
+          <button onClick={() => {setAnalysis(null); setUrl('')}} className="mt-4 w-full bg-white text-indigo-600 py-3 rounded-xl font-bold text-sm">Bloquear por 72h</button>
         </div>
       )}
     </div>
   );
 };
 
-const LockedWidget = ({ title, planName }: { title: string, planName: string }) => (
-  <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl md:rounded-4xl relative overflow-hidden group">
-    <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center p-4 text-center">
-      <div className="bg-white dark:bg-slate-800 p-3 rounded-full shadow-lg text-slate-400 mb-3"><Lock size={20} /></div>
-      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-white dark:bg-slate-800 px-4 py-1.5 rounded-full shadow-sm">
-        Desbloquear {planName}
-      </span>
-    </div>
-    <h3 className="font-bold text-slate-400 text-sm">{title}</h3>
-    <div className="h-20" />
-  </div>
-);
-
-// --- COMPONENTE PRINCIPAL ---
-
 const Dashboard: React.FC = () => {
-  const { user, logout, loading } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
-
-  const [balance, setBalance] = useState(0); 
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>('lastMonth'); 
+  
+  const [financialData, setFinancialData] = useState<any>(null);
+  const [globalSavings, setGlobalSavings] = useState(0); 
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('lastMonth');
   
   const [showDepositModal, setShowDepositModal] = useState(false);
-  const [depositValue, setDepositValue] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false); 
-
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [withdrawValue, setWithdrawValue] = useState('');
-  const [withdrawError, setWithdrawError] = useState('');
+  const [inputValue, setInputValue] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Sincroniza o saldo local com o Firebase
   useEffect(() => {
-    if (user?.financialData?.balance !== undefined) {
-      setBalance(user.financialData.balance);
-    }
-  }, [user]); 
+    if (!user?.uid) return;
+    const unsub = onSnapshot(doc(db, 'users', user.uid), (doc) => {
+      if (doc.exists()) setFinancialData(doc.data().financialData);
+    });
+    return () => unsub();
+  }, [user]);
 
-  // Gere a mudança de tema (Dark Mode)
+  useEffect(() => {
+    const fetchGlobalData = async () => {
+      const q = query(collection(db, 'users'));
+      const querySnapshot = await getDocs(q);
+      let total = 0;
+      querySnapshot.forEach((doc) => {
+        total += doc.data().financialData?.totalSaved || 0;
+      });
+      setGlobalSavings(total);
+    };
+    fetchGlobalData();
+  }, []);
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  };
+  // --- LÓGICA DO AGENTE SOMBRA FUNCIONAL ---
+  const assinaturasParaCortar = useMemo(() => {
+    const subs = financialData?.subscriptions || [];
+    // Filtra apenas as assinaturas que o Agente Sombra marcou como 'baixo' uso
+    return subs.filter((s: any) => s.statusUso === 'baixo');
+  }, [financialData]);
 
-  const handleDeposit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const amount = parseFloat(depositValue.replace(',', '.')); 
-    
-    if (amount > 0 && user?.uid) {
-      setIsProcessing(true);
-      const newBalance = balance + amount;
-      
-      try {
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, {
-          financialData: { balance: newBalance }
-        }, { merge: true });
-        
-        setBalance(newBalance); 
-        setShowDepositModal(false); 
-        setDepositValue(''); 
-      } catch (error) {
-        console.error("Erro ao depositar:", error);
-        alert("Ocorreu um erro ao processar o depósito.");
-      } finally {
-        setIsProcessing(false);
-      }
+  const totalVazamentos = useMemo(() => {
+    return assinaturasParaCortar.reduce((acc: number, curr: any) => acc + curr.valor, 0);
+  }, [assinaturasParaCortar]);
+
+  const handleTransaction = async (type: 'deposit' | 'withdraw') => {
+    const amount = parseFloat(inputValue.replace(',', '.'));
+    if (isNaN(amount) || amount <= 0 || !user?.uid) return;
+    if (type === 'withdraw' && amount > (financialData?.balance || 0)) return alert("Saldo insuficiente");
+
+    setIsProcessing(true);
+    const newBalance = type === 'deposit' ? (financialData?.balance || 0) + amount : (financialData?.balance || 0) - amount;
+
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        financialData: { balance: newBalance }
+      }, { merge: true });
+      setShowDepositModal(false);
+      setShowWithdrawModal(false);
+      setInputValue('');
+    } catch (e) {
+      alert("Erro na transação");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleWithdraw = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const amount = parseFloat(withdrawValue.replace(',', '.')); 
-    
-    if (amount > 0 && user?.uid) {
-      if (amount <= balance) {
-        setIsProcessing(true);
-        const newBalance = balance - amount;
-        
-        try {
-          const userRef = doc(db, 'users', user.uid);
-          await setDoc(userRef, {
-            financialData: { balance: newBalance }
-          }, { merge: true });
+  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
 
-          setBalance(newBalance);
-          setShowWithdrawModal(false); 
-          setWithdrawValue(''); 
-          setWithdrawError('');
-        } catch (error) {
-          console.error("Erro ao resgatar:", error);
-          setWithdrawError("Erro de conexão. Tente novamente.");
-        } finally {
-          setIsProcessing(false);
-        }
-      } else {
-        setWithdrawError('Saldo insuficiente para este resgate.');
-      }
-    }
-  };
-
-  // --- LÓGICA DE COMPARAÇÃO DE TENDÊNCIA E PATRIMÓNIO ---
-  // O Património Total real é a soma de tudo (Investido + Saldo)
-  const totalInvested = user?.financialData?.totalInvested || 0;
-  const patrimonioTotal = totalInvested + balance; 
-  
-  // O mock de histórico acompanha o Património Total (A ser substituído por dados do Firebase no futuro)
-  const mockHistory: Record<Period, number> = {
-    yesterday: patrimonioTotal * 0.995,  
-    lastWeek: patrimonioTotal * 0.98,    
-    lastMonth: patrimonioTotal * 0.916,  
-    sixMonths: patrimonioTotal * 0.85,   
-    lastYear: patrimonioTotal * 1.05,    
-  };
-
-  const pastValue = user?.financialData?.history?.[selectedPeriod] || mockHistory[selectedPeriod] || patrimonioTotal;
-  
-  const diffInvested = patrimonioTotal - pastValue;
-  const percentChange = pastValue > 0 ? (diffInvested / pastValue) * 100 : 0;
-  const isPositiveTrend = percentChange >= 0;
-
-  const periodLabels: Record<Period, string> = {
-    yesterday: 'desde ontem',
-    lastWeek: 'esta semana',
-    lastMonth: 'este mês',
-    sixMonths: 'em 6 meses',
-    lastYear: 'este ano'
-  };
-
-  if (loading) return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
-      <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-indigo-600 font-black animate-pulse uppercase tracking-widest text-xs">A Sincronizar Guardião...</p>
-    </div>
-  );
-
-  const plan = user?.plan || 'basic';
-  const userName = user?.displayName?.split(' ')[0] || 'Investidor';
+  const patrimonioTotal = (financialData?.balance || 0) + (financialData?.totalInvested || 0);
+  const hourlyRate = (financialData?.salary || 3000) / 160;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 p-4 md:p-8 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-24 lg:pb-8">
-      
-      {/* HEADER */}
-      <header className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6">
-        <div className="w-full sm:w-auto">
-          <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-800 dark:text-white leading-none">Olá, {userName}</h1>
-          <div className="flex items-center gap-2 mt-2">
-            <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest shadow-sm text-white ${
-              plan === 'ultimate' ? 'bg-linear-to-r from-amber-400 to-orange-500' :
-              plan === 'plus' ? 'bg-emerald-500' :
-              plan === 'premium' ? 'bg-purple-600' : 'bg-slate-800'
-            }`}>
-              {plan === 'ultimate' && <Crown size={10} className="inline mr-1" />}
-              PLANO {plan.toUpperCase()}
-            </span>
-          </div>
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 p-4 md:p-8 transition-colors duration-300">
+      <header className="max-w-7xl mx-auto flex justify-between items-center mb-10">
+        <div>
+          <h1 className="text-2xl font-black dark:text-white">Olá, {user?.displayName?.split(' ')[0]}</h1>
+          <span className="text-[10px] font-black bg-indigo-600 text-white px-2 py-1 rounded uppercase tracking-widest">Plano {user?.plan?.toUpperCase()}</span>
         </div>
-        
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-          <button onClick={() => setIsDarkMode(!isDarkMode)} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm active:scale-95 transition-all">
-            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+        <div className="flex gap-3">
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            {isDarkMode ? <Sun size={20} className="text-white"/> : <Moon size={20} />}
           </button>
-          <button onClick={logout} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm hover:text-red-500 active:scale-95 transition-all">
+          <button onClick={logout} className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-red-500">
             <LogOut size={20} />
           </button>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto space-y-6">
-        
-        {/* BLOCO DE PATRIMÓNIO */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-10 rounded-4xl md:rounded-[2.5rem] shadow-sm flex flex-col justify-between relative overflow-hidden">
-            <div className="relative z-10">
-              
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Património Total</p>
-                
-                {/* --- FILTRO DE TEMPO NOVO --- */}
-                <div className="relative inline-flex">
-                  <select 
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value as Period)}
-                    className="appearance-none bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500 dark:text-slate-300 uppercase tracking-widest px-3 py-1.5 pr-8 rounded-full outline-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    <option value="yesterday">Ontem</option>
-                    <option value="lastWeek">Semana Passada</option>
-                    <option value="lastMonth">Mês Passado</option>
-                    <option value="sixMonths">6 Meses Atrás</option>
-                    <option value="lastYear">1 Ano Atrás</option>
-                  </select>
-                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
-                </div>
-              </div>
-
-              {/* VALOR DO PATRIMÓNIO ATUALIZADO (SOMA) */}
-              <h2 className="text-3xl md:text-5xl font-black text-slate-800 dark:text-white tracking-tighter mt-1">
-                {formatCurrency(patrimonioTotal)}
-              </h2>
-              
-              {/* --- TENDÊNCIA DINÂMICA (VERDE OU VERMELHO) --- */}
-              <div className={`flex items-center gap-2 mt-4 font-bold text-xs md:text-sm ${isPositiveTrend ? 'text-emerald-500' : 'text-red-500'}`}>
-                {isPositiveTrend ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                <span>
-                  {isPositiveTrend ? '+' : ''}{percentChange.toFixed(1)}% {periodLabels[selectedPeriod]}
-                </span>
-              </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden">
+            <div className="flex justify-between items-start relative z-10">
+               <div>
+                 <p className="text-[10px] font-black uppercase text-slate-400">Património Total</p>
+                 <h2 className="text-4xl md:text-5xl font-black dark:text-white tracking-tighter mt-1">{formatCurrency(patrimonioTotal)}</h2>
+               </div>
+               <select value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value as Period)} className="bg-slate-100 dark:bg-slate-800 text-[10px] font-bold p-2 rounded-full outline-none dark:text-white">
+                  <option value="lastMonth">Este Mês</option>
+                  <option value="lastYear">Este Ano</option>
+               </select>
             </div>
-            
-            <div className="mt-8 flex flex-row gap-3 relative z-10">
-              <button 
-                onClick={() => setShowDepositModal(true)}
-                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-4 rounded-2xl font-bold text-xs md:text-sm active:scale-95 transition-all"
-              >
-                Depositar
-              </button>
-              <button 
-                onClick={() => { setShowWithdrawModal(true); setWithdrawError(''); }}
-                className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-4 rounded-2xl font-bold text-xs md:text-sm active:scale-95 transition-all"
-              >
-                Retirar
-              </button>
-            </div>
-            <div className={`absolute -right-16 -bottom-16 opacity-5 dark:opacity-10 pointer-events-none ${
-              plan === 'ultimate' ? 'text-amber-500' : 'text-indigo-500'
-            }`}>
-              <ShieldCheck size={280} />
+            <div className="mt-8 flex gap-3 relative z-10">
+              <button onClick={() => setShowDepositModal(true)} className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-2xl font-bold active:scale-95 transition-all">Gerir Saldo</button>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-8 rounded-4xl shadow-sm flex flex-col justify-center">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Saldo em Conta</p>
-            {/* VALOR DO SALDO */}
-            <h2 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white leading-tight">
-              {formatCurrency(balance)} 
-            </h2>
-            <p className="text-[10px] text-slate-400 mt-2 font-medium italic">Disponível para transações</p>
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm flex flex-col justify-center">
+            <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Saldo em Conta</p>
+            <h2 className="text-3xl font-black dark:text-white">{formatCurrency(financialData?.balance)}</h2>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8 space-y-6">
             
-            {/* AGENTE SOMBRA */}
-            {['premium', 'plus', 'ultimate'].includes(plan) ? (
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-10 rounded-4xl md:rounded-[2.5rem] shadow-sm relative overflow-hidden">
-                 <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-4 text-red-500"><Zap size={18} /><span className="text-[10px] font-black uppercase tracking-widest leading-none">Agente Sombra</span></div>
-                  <h2 className="text-slate-800 dark:text-white font-black text-2xl md:text-3xl tracking-tight">Vazamentos Ocultos</h2>
-                  <p className="text-4xl md:text-6xl font-black text-red-500 mt-3 leading-none">R$ 142,90</p>
-                  <button className="mt-8 w-full sm:w-auto bg-red-500 text-white font-bold py-4 px-10 rounded-xl text-sm shadow-lg shadow-red-500/30 active:scale-95 transition-all">Exterminar Gastos</button>
-                </div>
-                <div className="absolute top-0 right-0 w-48 md:w-72 h-48 md:h-72 bg-red-50 dark:bg-red-900/10 rounded-full -mr-16 -mt-16 opacity-60"></div>
+            {/* AGENTE SOMBRA AJUSTADO */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden">
+              <div className="flex items-center gap-2 mb-4 text-red-500">
+                <Zap size={18} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Agente Sombra</span>
               </div>
-            ) : (
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-8 rounded-4xl shadow-sm">
-                <div className="flex items-center gap-2 mb-4 text-indigo-600"><CreditCard size={18} /><span className="text-[10px] font-black uppercase tracking-widest">Monitorização</span></div>
-                <h2 className="text-slate-800 dark:text-white font-black text-xl md:text-3xl tracking-tight leading-tight">Análise de Gastos</h2>
-                <button className="mt-8 w-full sm:w-auto bg-indigo-600 text-white font-bold py-4 px-8 rounded-xl text-xs md:text-sm active:scale-95">Ligar Conta Bancária</button>
+              <h2 className="text-slate-800 dark:text-white font-black text-2xl">Vazamentos Detectados</h2>
+              
+              {/* Valor somado dinamicamente das assinaturas inativas */}
+              <p className="text-5xl font-black text-red-500 mt-2">
+                {formatCurrency(totalVazamentos)}
+              </p>
+              
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
+                <p className="text-xs text-slate-400">
+                  {assinaturasParaCortar.length > 0 
+                    ? `Identificamos ${assinaturasParaCortar.length} assinaturas que você está gastando.`
+                    : "Sua conta está blindada. Nenhum vazamento detectado."}
+                </p>
+                <button 
+                  onClick={() => navigate('/agentes/sombra')}
+                  className="bg-red-500 text-white font-bold py-3 px-6 rounded-xl text-xs shadow-lg shadow-red-500/30 active:scale-95 transition-all"
+                >
+                  Exterminar Gastos
+                </button>
               </div>
-            )}
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-              {['plus', 'ultimate'].includes(plan) ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="p-3 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-2xl"><Target size={24} /></div>
-                    <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">Herança</span>
-                  </div>
-                  <h3 className="font-bold text-slate-800 dark:text-white text-xs md:text-sm">Horas de Vida Salvas</h3>
-                  <p className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mt-1">{user?.financialData?.hoursSaved || 0}h</p>
-                </div>
-              ) : (
-                <LockedWidget title="Arquiteto de Herança" planName="Plus Pro" />
-              )}
-
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl"><TrendingUp size={24} /></div>
-                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Rendimento</span>
-                </div>
-                <h3 className="font-bold text-slate-800 dark:text-white text-xs md:text-sm">Yu’e Bao Brasileiro</h3>
-                <p className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white mt-1">R$ 42,30</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+                <Target className="text-green-500 mb-4" />
+                <h3 className="font-bold text-slate-400 text-xs uppercase">Horas de Vida Salvas</h3>
+                <p className="text-3xl font-black dark:text-white">{financialData?.hoursSaved || 0}h</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+                <TrendingUp className="text-emerald-500 mb-4" />
+                <h3 className="font-bold text-slate-400 text-xs uppercase">Rendimento Yu’e Bao</h3>
+                <p className="text-3xl font-black dark:text-white">{formatCurrency(financialData?.dailyYield || 1.25)}</p>
               </div>
             </div>
           </div>
 
           <div className="lg:col-span-4 space-y-6">
-            <SentinelaWidget hourlyRate={user?.financialData?.totalInvested ? 60 : 40} />
-
-            {plan === 'ultimate' ? (
-              <div className="bg-linear-to-br from-amber-400 to-orange-500 p-6 md:p-8 rounded-4xl md:rounded-[2.5rem] text-white shadow-xl shadow-amber-200/50 transition-colors duration-300">
-                <div className="flex items-center gap-2 mb-4"><Users size={20} className="text-white" /><span className="text-[10px] font-black uppercase tracking-widest text-white/90">Efeito Manada</span></div>
-                <h3 className="text-xl md:text-2xl font-bold tracking-tight">Missão de Equipa</h3>
-                <p className="text-white/90 text-sm mt-2 font-medium">Economia coletiva em 85%.</p>
-                <button className="mt-8 w-full py-4 bg-white text-amber-600 rounded-xl font-bold text-[10px] uppercase tracking-wider active:scale-95 transition-transform shadow-md">Ver Ranking</button>
-              </div>
-            ) : (
-              <LockedWidget title="Efeito Manada" planName="Ultimate Elite" />
-            )}
+            <SentinelaWidget hourlyRate={hourlyRate} />
+            
+            <div className="bg-linear-to-br from-amber-400 to-orange-500 p-8 rounded-[2.5rem] text-white shadow-xl">
+              <div className="flex items-center gap-2 mb-4"><Users size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Missão de Equipa</span></div>
+              <h3 className="text-2xl font-bold">Economia Global</h3>
+              <p className="text-4xl font-black mt-2">{formatCurrency(globalSavings)}</p>
+              <p className="text-xs text-white/80 mt-2">Total salvo pela comunidade Akumol.</p>
+            </div>
           </div>
         </div>
       </main>
 
-      {/* --- MODAL DE DEPÓSITO --- */}
-      {showDepositModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
+      {(showDepositModal || showWithdrawModal) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl w-full max-w-md shadow-2xl animate-in zoom-in-95">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-black text-slate-800 dark:text-white">Fazer Depósito</h3>
-              <button 
-                onClick={() => setShowDepositModal(false)} 
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
-                disabled={isProcessing}
-              >
-                <X size={24} />
-              </button>
+              <h3 className="text-xl font-black dark:text-white">Gerir Saldo</h3>
+              <button onClick={() => {setShowDepositModal(false); setShowWithdrawModal(false)}}><X className="text-slate-400" /></button>
             </div>
-            
-            <form onSubmit={handleDeposit} className="space-y-6">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Valor do Depósito (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={depositValue}
-                  onChange={(e) => setDepositValue(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-4 text-2xl font-black text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                  required
-                  autoFocus
-                  disabled={isProcessing}
-                />
-              </div>
-              
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all text-sm flex justify-center items-center gap-2"
-              >
-                {isProcessing ? <Clock size={18} className="animate-spin" /> : "Confirmar Depósito"}
-              </button>
-            </form>
+            <input 
+              type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)}
+              placeholder="0,00" className="w-full bg-slate-100 dark:bg-slate-800 p-4 rounded-xl text-2xl font-black outline-none mb-6 dark:text-white" 
+            />
+            <div className="flex gap-3">
+              <button onClick={() => handleTransaction('withdraw')} disabled={isProcessing} className="flex-1 bg-slate-100 dark:bg-slate-800 p-4 rounded-xl font-bold text-slate-600 dark:text-slate-300">Retirar</button>
+              <button onClick={() => handleTransaction('deposit')} disabled={isProcessing} className="flex-1 bg-indigo-600 text-white p-4 rounded-xl font-bold">Depositar</button>
+            </div>
           </div>
         </div>
       )}
-
-      {/* --- MODAL DE RETIRADA --- */}
-      {showWithdrawModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-black text-slate-800 dark:text-white">Resgatar Saldo</h3>
-              <button 
-                onClick={() => setShowWithdrawModal(false)} 
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
-                disabled={isProcessing}
-              >
-                <X size={24} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleWithdraw} className="space-y-6">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Valor do Resgate (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={withdrawValue}
-                  onChange={(e) => setWithdrawValue(e.target.value)}
-                  placeholder="0.00"
-                  className={`w-full bg-slate-50 dark:bg-slate-800 border ${withdrawError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-slate-500'} rounded-xl px-4 py-4 text-2xl font-black text-slate-800 dark:text-white outline-none focus:ring-2 transition-all`}
-                  required
-                  autoFocus
-                  disabled={isProcessing}
-                />
-                {withdrawError && (
-                  <p className="text-red-500 text-xs font-bold mt-2 animate-in slide-in-from-top-1">{withdrawError}</p>
-                )}
-                <p className="text-slate-500 text-xs mt-2">Saldo disponível: {formatCurrency(balance)}</p>
-              </div>
-              
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className="w-full bg-slate-800 dark:bg-slate-100 hover:bg-slate-900 disabled:bg-slate-600 dark:hover:bg-white text-white dark:text-slate-900 font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all text-sm flex justify-center items-center gap-2"
-              >
-                {isProcessing ? <Clock size={18} className="animate-spin text-slate-400" /> : "Confirmar Resgate"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };
