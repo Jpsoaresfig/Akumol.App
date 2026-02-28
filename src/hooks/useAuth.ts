@@ -5,7 +5,7 @@ import {
   signOut, 
   sendPasswordResetEmail 
 } from 'firebase/auth';
-import { FirebaseError } from 'firebase/app'; // Importação correta aqui
+import { FirebaseError } from 'firebase/app';
 import { doc, onSnapshot } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import type { UserProfile } from '../types';
@@ -19,6 +19,15 @@ export const useAuth = () => {
 
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser: User | null) => {
       if (firebaseUser) {
+        
+        // ✅ A MÁGICA ACONTECE AQUI: Bloqueia quem não confirmou o e-mail
+        if (!firebaseUser.emailVerified) {
+          if (unsubscribeDoc) unsubscribeDoc();
+          setUser(null);
+          setLoading(false);
+          return; // Interrompe tudo aqui e não deixa ir pro Dashboard
+        }
+
         const userRef = doc(db, "users", firebaseUser.uid);
         
         unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
@@ -49,9 +58,6 @@ export const useAuth = () => {
     };
   }, []);
 
-  /**
-   * Envia e-mail de recuperação de senha.
-   */
   const resetPassword = async (email: string) => {
     try {
       await sendPasswordResetEmail(auth, email);
@@ -59,7 +65,6 @@ export const useAuth = () => {
     } catch (error: unknown) { 
       let errorMessage = "Erro ao enviar e-mail de recuperação.";
       
-      // Agora o instanceof funcionará corretamente
       if (error instanceof FirebaseError) {
         const errorCode = error.code;
         if (errorCode === 'auth/user-not-found') errorMessage = "Utilizador não encontrado.";

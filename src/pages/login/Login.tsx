@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
-  updateProfile 
+  updateProfile,
+  sendEmailVerification, // Nova importação
+  signOut // Nova importação
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../api/firebase';
@@ -39,6 +41,7 @@ const LoginPage: React.FC = () => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
         
+        // Criar documento no Firestore
         await setDoc(doc(db, "users", userCredential.user.uid), {
           uid: userCredential.user.uid,
           displayName: name,
@@ -56,10 +59,29 @@ const LoginPage: React.FC = () => {
             weatherAutoSave: false
           }
         });
-        navigate('/');
+
+        // ✅ ENVIAR E-MAIL DE VERIFICAÇÃO
+        await sendEmailVerification(userCredential.user);
+
+        // ✅ DESLOGAR IMEDIATAMENTE APÓS O CADASTRO
+        await signOut(auth);
+
+        // Voltar para a tela de login e avisar o usuário
+        setIsRegistering(false);
+        setResetMsg("Conta criada com sucesso! Enviamos um link para o seu e-mail. Por favor, confirme-o antes de fazer login (verifique também o spam).");
+        
       } else {
         // Fluxo de Login no Firebase
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        // ✅ VERIFICAR SE O E-MAIL FOI CONFIRMADO
+        if (!userCredential.user.emailVerified) {
+          await signOut(auth); // Desloga o usuário imediatamente
+          setErrorMsg("Você precisa confirmar o seu e-mail antes de acessar. Verifique sua caixa de entrada ou spam.");
+          setIsLoading(false);
+          return;
+        }
+
         navigate('/');
       }
     } catch (error: unknown) {
@@ -105,7 +127,6 @@ const LoginPage: React.FC = () => {
       <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none p-8 border border-slate-100 dark:border-slate-800 transition-colors duration-300">
         
         <div className="text-center mb-8">
-          {/* Container da Logo com Alternância Automática de Tema */}
           <div className="w-20 h-20 mx-auto mb-4 drop-shadow-sm">
             <img 
               src={logoClara} 
