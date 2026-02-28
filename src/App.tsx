@@ -12,16 +12,17 @@ import Conselheiro from './pages/Counselor/CounselorChat';
 import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
 import Support from './pages/suport/Support'; 
-import UserHeader from './components/UserHeader'; // ✅ Importado
+import UserHeader from './components/UserHeader';
 
 const MainLayout = () => (
   <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
     <Sidebar />
     <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 relative">
-      {/* ✅ O UserHeader foi adicionado aqui para aparecer no topo das páginas internas */}
+      {/* Header fixo no topo de todas as páginas internas */}
       <UserHeader /> 
       
-      <div className="p-4 lg:p-8"> {/* Container para dar espaçamento ao conteúdo abaixo do header */}
+      {/* Ajuste de espaçamento: pt-2 e lg:pt-4 para deixar o conteúdo mais perto do header */}
+      <div className="p-4 lg:p-8 pt-2 lg:pt-4"> 
         <Outlet /> 
       </div>
     </main>
@@ -89,10 +90,12 @@ function App() {
           <Route path="/suporte" element={<Support />} />
         </Route>
 
-        {/* Para o AdminPanel, também adicionei o Header manualmente se desejar */}
         <Route path="/admin" element={
           user?.role === 'admin' ? (
-            <div className="relative"><UserHeader /><AdminPanel /></div>
+            <div className="relative">
+              <UserHeader />
+              <AdminPanel />
+            </div>
           ) : (
             <Navigate to="/" replace />
           )

@@ -5,7 +5,7 @@ import {
   ArrowUpRight, Sun, Moon, Target, 
   Clock, X
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Adicionado para navegar até o agente
+import { useNavigate } from 'react-router-dom';
 
 import { doc, setDoc, onSnapshot, collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../api/firebase';
@@ -100,10 +100,8 @@ const Dashboard: React.FC = () => {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  // --- LÓGICA DO AGENTE SOMBRA FUNCIONAL ---
   const assinaturasParaCortar = useMemo(() => {
     const subs = financialData?.subscriptions || [];
-    // Filtra apenas as assinaturas que o Agente Sombra marcou como 'baixo' uso
     return subs.filter((s: any) => s.statusUso === 'baixo');
   }, [financialData]);
 
@@ -127,7 +125,7 @@ const Dashboard: React.FC = () => {
       setShowWithdrawModal(false);
       setInputValue('');
     } catch (e) {
-      alert("Erro na transação");
+      alert("Erro na transação" + e);
     } finally {
       setIsProcessing(false);
     }
@@ -140,7 +138,8 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 p-4 md:p-8 transition-colors duration-300">
-      <header className="max-w-7xl mx-auto flex justify-between items-center mb-10">
+      {/* ALTERAÇÃO: Removido mb-10 e adicionado mb-4 para aproximar o conteúdo */}
+      <header className="max-w-7xl mx-auto flex justify-between items-center mb-4">
         <div>
           <h1 className="text-2xl font-black dark:text-white">Olá, {user?.displayName?.split(' ')[0]}</h1>
           <span className="text-[10px] font-black bg-indigo-600 text-white px-2 py-1 rounded uppercase tracking-widest">Plano {user?.plan?.toUpperCase()}</span>
@@ -155,7 +154,8 @@ const Dashboard: React.FC = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto space-y-6">
+      {/* ALTERAÇÃO: Reduzido o espaçamento vertical entre o header e o main */}
+      <main className="max-w-7xl mx-auto space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden">
             <div className="flex justify-between items-start relative z-10">
@@ -181,20 +181,15 @@ const Dashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8 space-y-6">
-            
-            {/* AGENTE SOMBRA AJUSTADO */}
             <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden">
               <div className="flex items-center gap-2 mb-4 text-red-500">
                 <Zap size={18} />
                 <span className="text-[10px] font-black uppercase tracking-widest">Agente Sombra</span>
               </div>
               <h2 className="text-slate-800 dark:text-white font-black text-2xl">Vazamentos Detectados</h2>
-              
-              {/* Valor somado dinamicamente das assinaturas inativas */}
               <p className="text-5xl font-black text-red-500 mt-2">
                 {formatCurrency(totalVazamentos)}
               </p>
-              
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
                 <p className="text-xs text-slate-400">
                   {assinaturasParaCortar.length > 0 
@@ -226,7 +221,6 @@ const Dashboard: React.FC = () => {
 
           <div className="lg:col-span-4 space-y-6">
             <SentinelaWidget hourlyRate={hourlyRate} />
-            
             <div className="bg-linear-to-br from-amber-400 to-orange-500 p-8 rounded-[2.5rem] text-white shadow-xl">
               <div className="flex items-center gap-2 mb-4"><Users size={20} /><span className="text-[10px] font-black uppercase tracking-widest">Missão de Equipa</span></div>
               <h3 className="text-2xl font-bold">Economia Global</h3>
