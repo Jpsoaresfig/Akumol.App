@@ -13,15 +13,13 @@ import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
 import Support from './pages/suport/Support'; 
 import UserHeader from './components/UserHeader';
+import Profile from './pages/login/Profile'; // ✅ Importado corretamente
 
 const MainLayout = () => (
   <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
     <Sidebar />
     <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 relative">
-      {/* Header fixo no topo de todas as páginas internas */}
       <UserHeader /> 
-      
-      {/* Ajuste de espaçamento: pt-2 e lg:pt-4 para deixar o conteúdo mais perto do header */}
       <div className="p-4 lg:p-8 pt-2 lg:pt-4"> 
         <Outlet /> 
       </div>
@@ -55,6 +53,10 @@ function App() {
 
         <Route element={user ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/" element={user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />} />
+          
+          {/* ✅ ROTA DO PERFIL ADICIONADA AQUI */}
+          <Route path="/perfil" element={<Profile />} />
+          
           <Route path="/evolucao" element={<Evolucao />} />
           <Route path="/agentes" element={<Agentes />} />
           <Route path="/agentes/sentinela" element={<AgenteSentinela />} />
