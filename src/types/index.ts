@@ -1,6 +1,7 @@
 
 export type PlanLevel = 'basic' | 'premium' | 'plus' | 'ultimate';
 export interface UserProfile {
+  photoURL: string | undefined;
   uid: string;
   email: string;
   displayName: string;
