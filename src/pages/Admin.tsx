@@ -34,11 +34,14 @@ const AdminPanel: React.FC = () => {
   const { logout, user: adminUser } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [loading, setLoading] = useState(true); // Já inicia como true aqui
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'tickets'>('overview');
 
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+
+  // Verificação de role
+  const isAdmin = adminUser?.role === 'admin';
 
   useEffect(() => {
     if (isDarkMode) {
@@ -51,9 +54,11 @@ const AdminPanel: React.FC = () => {
   }, [isDarkMode]);
 
   const fetchData = useCallback(async () => {
-    // ❌ REMOVIDO o setLoading(true) daqui para corrigir o erro do useEffect.
+    if (!isAdmin) {
+      setLoading(false);
+      return;
+    }
 
-    // 1. Busca Usuários
     try {
       const userSnap = await getDocs(query(collection(db, "users")));
       const userList = userSnap.docs.map(d => ({ ...d.data(), uid: d.id } as UserProfile));
@@ -62,12 +67,10 @@ const AdminPanel: React.FC = () => {
       console.error("Erro ao carregar usuários:", error);
     }
 
-    // 2. Busca Tickets
     try {
       const ticketSnap = await getDocs(query(collection(db, "support_tickets")));
       const ticketList = ticketSnap.docs.map(d => ({ id: d.id, ...d.data() } as SupportTicket));
       
-      // Ordenação com trava de segurança
       setTickets(ticketList.sort((a, b) => {
         const timeA = a.createdAt?.seconds || 0;
         const timeB = b.createdAt?.seconds || 0;
@@ -77,24 +80,40 @@ const AdminPanel: React.FC = () => {
       console.error("Erro ao carregar tickets:", error);
     }
 
-    // ✅ O React permite atualizações assíncronas no final sem reclamar
     setLoading(false);
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, [fetchData]);
 
   const updatePlan = async (userId: string, newPlan: PlanLevel) => {
     try {
-      setLoading(true); // ✅ Loading ativado apenas ao clicar no botão
+      setLoading(true);
       await updateDoc(doc(db, "users", userId), { plan: newPlan });
       await fetchData(); 
     } catch (error) {
       alert("Erro ao atualizar plano. Verifique as permissões.");
       console.error(error);
-      setLoading(false); // ✅ Trava de segurança para se der erro não ficar preso
+      setLoading(false);
+    }
+  };
+
+  // ✅ NOVA FUNÇÃO: Atualizar o cargo (role) do usuário
+  const toggleAdminRole = async (userId: string, currentRole?: string) => {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const actionText = newRole === 'admin' ? 'promover a Admin' : 'remover o Admin de';
+    
+    if (window.confirm(`Tem certeza que deseja ${actionText} este usuário?`)) {
+      try {
+        setLoading(true);
+        await updateDoc(doc(db, "users", userId), { role: newRole });
+        await fetchData(); 
+      } catch (error) {
+        alert("Erro ao atualizar cargo. Verifique as permissões do Firebase.");
+        console.error(error);
+        setLoading(false);
+      }
     }
   };
 
@@ -118,9 +137,21 @@ const AdminPanel: React.FC = () => {
   const totalUsers = users.length;
   const premiumUsers = users.filter(u => u.plan !== 'basic').length;
 
+  if (!isAdmin && !loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        <ShieldAlert size={64} className="text-red-500 mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Acesso Restrito</h1>
+        <p className="mb-6">Você não possui permissão de administrador.</p>
+        <button onClick={logout} className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-bold">
+          <LogOut size={18} /> Voltar / Sair
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
-      {/* SIDEBAR */}
       <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-4 z-10 md:flex">
         <div className="space-y-8">
           <div className="flex items-center gap-3 px-4">
@@ -151,10 +182,8 @@ const AdminPanel: React.FC = () => {
         </div>
       </aside>
 
-      {/* ÁREA PRINCIPAL */}
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         
-        {/* Header Mobile */}
         <header className="md:hidden flex items-center justify-between mb-8 pb-4 border-b border-slate-200 dark:border-slate-800">
           <span className="font-black text-xl">Admin<span className="text-red-600">IA</span></span>
           <div className="flex gap-2">
@@ -174,7 +203,6 @@ const AdminPanel: React.FC = () => {
             <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>
           ) : (
             <>
-              {/* ABA: VISÃO GERAL */}
               {activeTab === 'overview' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in">
                   <div className="bg-white dark:bg-slate-900 p-8 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-sm">
@@ -188,7 +216,6 @@ const AdminPanel: React.FC = () => {
                 </div>
               )}
 
-              {/* ABA: USUÁRIOS */}
               {activeTab === 'users' && (
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm animate-in fade-in">
                   <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -211,16 +238,32 @@ const AdminPanel: React.FC = () => {
                         {filteredUsers.map(u => (
                           <tr key={u.uid} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                             <td className="p-6">
-                              <p className="font-bold">{u.displayName || 'Sem Nome'}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-bold">{u.displayName || 'Sem Nome'}</p>
+                                {/* Tag visual se o usuário já for admin */}
+                                {u.role === 'admin' && (
+                                  <span className="px-2 py-0.5 bg-red-100 text-red-600 dark:bg-red-900/30 rounded-full text-[9px] font-black uppercase">Admin</span>
+                                )}
+                              </div>
                               <p className="text-xs text-slate-400">{u.email}</p>
                             </td>
                             <td className="p-6">
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 {planLevels.map(p => (
                                   <button key={p} onClick={() => updatePlan(u.uid!, p)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${u.plan === p ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-indigo-500 hover:text-white'}`}>
                                     {p}
                                   </button>
                                 ))}
+                                
+                                <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+                                
+                                {/* ✅ A OPÇÃO ADMIN ESTÁ AQUI */}
+                                <button 
+                                  onClick={() => toggleAdminRole(u.uid!, u.role)} 
+                                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${u.role === 'admin' ? 'bg-red-600 text-white border-red-600 shadow-md hover:bg-red-700' : 'bg-transparent text-red-500 border-red-500 hover:bg-red-500 hover:text-white'}`}
+                                >
+                                  {u.role === 'admin' ? 'Remover Admin' : 'Tornar Admin'}
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -234,7 +277,6 @@ const AdminPanel: React.FC = () => {
                 </div>
               )}
 
-              {/* ABA: TICKETS */}
               {activeTab === 'tickets' && (
                 <div className="grid gap-4 animate-in fade-in slide-in-from-bottom-4">
                   {tickets.length === 0 ? (
