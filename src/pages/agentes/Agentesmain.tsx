@@ -1,9 +1,8 @@
 import React from 'react';
 import { ShieldCheck, Zap, Target, Users, Brain, HeartPulse } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Importação necessária
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
-// 1. Definição da Interface para as propriedades do Card
 interface AgenteCardProps {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   name: string;
@@ -11,10 +10,9 @@ interface AgenteCardProps {
   plan: string;
   color: string;
   locked: boolean;
-  path?: string; // Adicionado path opcional
+  path?: string;
 }
 
-// 2. Componente de Card Atualizado
 const AgenteCard: React.FC<AgenteCardProps> = ({ 
   icon: Icon, 
   name, 
@@ -27,7 +25,6 @@ const AgenteCard: React.FC<AgenteCardProps> = ({
   const navigate = useNavigate();
 
   const handleClick = () => {
-    // Só navega se não estiver travado e se houver um caminho definido
     if (!locked && path) {
       navigate(path);
     }
@@ -58,9 +55,16 @@ const Agentes: React.FC = () => {
   const { user } = useAuth();
   const plan = user?.plan || 'basic';
 
-  // 3. Tipagem e Caminhos das Rotas
   const agentes: AgenteCardProps[] = [
-    { icon: ShieldCheck, name: 'Sentinela', description: 'O filtro de 72h contra compras por impulso.', plan: 'Basic', color: 'bg-indigo-600', locked: false },
+    { 
+      icon: ShieldCheck, 
+      name: 'Sentinela', 
+      description: 'O filtro de 72h contra compras por impulso.', 
+      plan: 'Basic', 
+      color: 'bg-indigo-600', 
+      locked: false,
+      path: '/agentes/sentinela'
+    },
     { 
       icon: Zap, 
       name: 'Sombra', 
@@ -68,16 +72,32 @@ const Agentes: React.FC = () => {
       plan: 'Premium', 
       color: 'bg-red-500', 
       locked: !['premium', 'plus', 'ultimate'].includes(plan),
-      path: '/agentes/sombra' // Rota definida no App.tsx
+      path: '/agentes/sombra'
     },
-    { icon: Target, name: 'Radar', description: 'Stacking automático de milhas e cashbacks.', plan: 'Premium', color: 'bg-orange-500', locked: !['premium', 'plus', 'ultimate'].includes(plan) },
-    { icon: HeartPulse, name: 'Dopamina', description: 'Bloqueio de gastos por humor e estresse.', plan: 'Plus', color: 'bg-pink-500', locked: !['plus', 'ultimate'].includes(plan) },
+    { 
+      icon: Target, 
+      name: 'Radar', 
+      description: 'Stacking automático de milhas e cashbacks.', 
+      plan: 'Premium', 
+      color: 'bg-orange-500', 
+      locked: !['premium', 'plus', 'ultimate'].includes(plan),
+      path: '/agentes/radar'
+    },
+    { 
+      icon: HeartPulse, 
+      name: 'Dopamina', 
+      description: 'Bloqueio de gastos por humor e estresse.', 
+      plan: 'Plus', 
+      color: 'bg-pink-500', 
+      locked: !['plus', 'ultimate'].includes(plan),
+      path: '/agentes/dopamina' // ✅ Rota adicionada
+    },
     { icon: Brain, name: 'Arquiteto', description: 'Converte economia em tempo de aposentadoria.', plan: 'Plus', color: 'bg-emerald-500', locked: !['plus', 'ultimate'].includes(plan) },
     { icon: Users, name: 'Resiliência', description: 'Cofres invisíveis para blindagem familiar.', plan: 'Ultimate', color: 'bg-amber-500', locked: plan !== 'ultimate' },
   ];
 
   return (
-    <div className="p-8">
+    <div className="p-8 animate-in fade-in duration-500 pb-24 lg:pb-8">
       <header className="mb-12">
         <h1 className="text-4xl font-black tracking-tight text-slate-800 dark:text-white">Conselho de Diretores IA</h1>
         <p className="text-slate-500 mt-2 font-medium">Seus guardiões comportamentais ativos.</p>

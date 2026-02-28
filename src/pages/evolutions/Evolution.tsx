@@ -6,14 +6,14 @@ import {
 } from 'recharts';
 import { useAuth } from '../../hooks/useAuth';
 
-// --- 1. FUNÇÕES AUXILIARES E TIPAGENS MOVIDAS PARA FORA ---
+// --- 1. FUNÇÕES AUXILIARES E TIPAGENS ---
 
 // Função de formatar moeda global para o arquivo
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
 
-// Interface para remover o erro de "any" do TypeScript
+// Interface para remover o erro do Tooltip
 interface CustomTooltipProps {
   active?: boolean;
   payload?: Array<{
@@ -25,7 +25,16 @@ interface CustomTooltipProps {
   label?: string;
 }
 
-// O componente Tooltip agora fica do lado de fora!
+// ✅ NOVA INTERFACE: Resolve o erro "Unexpected any"
+interface ExtendedFinancialData {
+  totalInvested?: number;
+  savingsRatio?: number;
+  hoursSaved?: number;
+  balance?: number;
+  impulsesResisted?: number;
+  impulsesMoneySaved?: number;
+}
+
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
@@ -49,23 +58,36 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 const Evolucao = () => {
   const { user } = useAuth();
 
-  // Lógica de dados dinâmicos baseados no patrimônio
-  const totalInvested = user?.financialData?.totalInvested || 0;
-  const balance = user?.financialData?.balance || 0;
+  // ✅ Usando a nova interface no lugar do "any"
+  const financialData = user?.financialData as ExtendedFinancialData | undefined;
+
+  // Lógica de dados REAIS do usuário
+  const totalInvested = financialData?.totalInvested || 0;
+  const balance = financialData?.balance || 0; 
   const patrimonioTotal = totalInvested + balance;
 
+  // Pegando dados reais para os cartões
+  const savingsRatio = financialData?.savingsRatio || 0;
+  const hoursSaved = financialData?.hoursSaved || 0;
+  const impulsosEvitados = financialData?.impulsesResisted || 0;
+  const dinheiroSalvoImpulsos = financialData?.impulsesMoneySaved || 0;
+
   const data = useMemo(() => {
-    const baseValue = patrimonioTotal > 0 ? patrimonioTotal : 5000; 
+    const mesAtual = new Date().toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+    const mesCapitalizado = mesAtual.charAt(0).toUpperCase() + mesAtual.slice(1);
+
+    if (patrimonioTotal === 0) {
+      return [
+        { month: 'Início', saldo: 0, economia: 0 },
+        { month: mesCapitalizado, saldo: 0, economia: 0 }
+      ];
+    }
 
     return [
-      { month: 'Set', saldo: baseValue * 0.70, economia: baseValue * 0.05, impulsos: 5 },
-      { month: 'Out', saldo: baseValue * 0.78, economia: baseValue * 0.08, impulsos: 3 },
-      { month: 'Nov', saldo: baseValue * 0.82, economia: baseValue * 0.04, impulsos: 4 },
-      { month: 'Dez', saldo: baseValue * 0.88, economia: baseValue * 0.06, impulsos: 1 },
-      { month: 'Jan', saldo: baseValue * 0.95, economia: baseValue * 0.07, impulsos: 2 },
-      { month: 'Fev', saldo: baseValue,        economia: baseValue * 0.05, impulsos: 0 }, 
+      { month: 'Início', saldo: 0, economia: 0 },
+      { month: mesCapitalizado, saldo: patrimonioTotal, economia: savingsRatio }
     ];
-  }, [patrimonioTotal]);
+  }, [patrimonioTotal, savingsRatio]);
 
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 pb-24 lg:pb-8">
@@ -128,35 +150,46 @@ const Evolucao = () => {
       {/* GRID DE PERFORMANCE */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
         
+        {/* TAXA DE POUPANÇA */}
         <div className="bg-emerald-50 dark:bg-emerald-500/5 p-6 md:p-8 rounded-4xl border border-emerald-100 dark:border-emerald-500/10 hover:shadow-lg transition-all">
           <div className="p-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-2xl w-fit mb-6">
             <Target size={24} className="text-emerald-600 dark:text-emerald-400" />
           </div>
           <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/70 dark:text-emerald-400/70 mb-1">Taxa de Poupança</p>
           <h3 className="text-3xl font-black text-emerald-700 dark:text-emerald-400">
-            {user?.financialData?.savingsRatio ? `${user.financialData.savingsRatio}%` : '24%'}
+            {savingsRatio}%
           </h3>
-          <p className="text-xs font-bold text-emerald-600/60 dark:text-emerald-400/60 mt-2">+4% em relação ao mês passado</p>
+          <p className="text-xs font-bold text-emerald-600/60 dark:text-emerald-400/60 mt-2">
+            {savingsRatio > 0 ? 'Sua taxa de poupança atual' : 'Comece a poupar para ver sua taxa'}
+          </p>
         </div>
 
+        {/* HERANÇA TEMPORAL */}
         <div className="bg-indigo-50 dark:bg-indigo-500/5 p-6 md:p-8 rounded-4xl border border-indigo-100 dark:border-indigo-500/10 hover:shadow-lg transition-all">
           <div className="p-3 bg-indigo-100 dark:bg-indigo-500/20 rounded-2xl w-fit mb-6">
             <Clock size={24} className="text-indigo-600 dark:text-indigo-400" />
           </div>
           <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600/70 dark:text-indigo-400/70 mb-1">Herança Temporal</p>
           <h3 className="text-3xl font-black text-indigo-700 dark:text-indigo-400">
-            {user?.financialData?.hoursSaved || 0} Horas
+            {hoursSaved} Horas
           </h3>
-          <p className="text-xs font-bold text-indigo-600/60 dark:text-indigo-400/60 mt-2">De vida recuperadas do sistema</p>
+          <p className="text-xs font-bold text-indigo-600/60 dark:text-indigo-400/60 mt-2">
+            De vida recuperadas do sistema
+          </p>
         </div>
 
+        {/* IMPULSOS EXTERMINADOS */}
         <div className="bg-red-50 dark:bg-red-500/5 p-6 md:p-8 rounded-4xl border border-red-100 dark:border-red-500/10 hover:shadow-lg transition-all sm:col-span-2 md:col-span-1">
           <div className="p-3 bg-red-100 dark:bg-red-500/20 rounded-2xl w-fit mb-6">
             <Zap size={24} className="text-red-600 dark:text-red-400" />
           </div>
           <p className="text-[10px] font-black uppercase tracking-widest text-red-600/70 dark:text-red-400/70 mb-1">Impulsos Exterminados</p>
-          <h3 className="text-3xl font-black text-red-700 dark:text-red-400">12 Desejos</h3>
-          <p className="text-xs font-bold text-red-600/60 dark:text-red-400/60 mt-2">Poupando aproximadamente R$ 1.240,00</p>
+          <h3 className="text-3xl font-black text-red-700 dark:text-red-400">
+            {impulsosEvitados} Desejos
+          </h3>
+          <p className="text-xs font-bold text-red-600/60 dark:text-red-400/60 mt-2">
+            Poupando aproximadamente {formatCurrency(dinheiroSalvoImpulsos)}
+          </p>
         </div>
 
       </div>

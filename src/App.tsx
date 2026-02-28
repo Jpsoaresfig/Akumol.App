@@ -4,17 +4,18 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Evolucao from './pages/evolutions/Evolution'; 
 import Agentes from './pages/agentes/Agentesmain'; 
-import AgenteSombra from './pages/agentes/AgenteSombra'; // Importação do novo Agente
+import AgenteSombra from './pages/agentes/AgenteSombra';
+import AgenteRadar from './pages/agentes/AgenteRadar';
+import AgenteSentinela from './pages/agentes/AgenteSentinela';
+import AgenteDopamina from './pages/agentes/AgenteDopamina'; // ✅ Importação adicionada
 import Conselheiro from './pages/Counselor/CounselorChat'; 
 import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
 import Support from './pages/suport/Support'; 
 
-// --- COMPONENTE DE LAYOUT ---
 const MainLayout = () => (
   <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
     <Sidebar />
-    {/* pb-20 no mobile para dar espaço à Bottom Nav inferior */}
     <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
       <Outlet /> 
     </main>
@@ -46,13 +47,12 @@ function App() {
         />
 
         <Route element={user ? <MainLayout /> : <Navigate to="/login" replace />}>
-          {/* Rota Inicial: Se for admin vai para painel, se não vai para o Dashboard */}
           <Route path="/" element={user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />} />
-          
           <Route path="/evolucao" element={<Evolucao />} />
           <Route path="/agentes" element={<Agentes />} />
           
-          {/* ROTA DO AGENTE SOMBRA (PROTEGIDA POR PLANO) */}
+          <Route path="/agentes/sentinela" element={<AgenteSentinela />} />
+          
           <Route 
             path="/agentes/sombra" 
             element={
@@ -62,16 +62,30 @@ function App() {
             } 
           />
 
+          <Route 
+            path="/agentes/radar" 
+            element={
+              user && ['premium', 'plus', 'ultimate'].includes(user.plan || '') 
+                ? <AgenteRadar /> 
+                : <Navigate to="/agentes" replace />
+            } 
+          />
+
+          {/* ROTA DO AGENTE DOPAMINA (PROTEGIDA POR PLANO PLUS/ULTIMATE) */}
+          <Route 
+            path="/agentes/dopamina" 
+            element={
+              user && ['plus', 'ultimate'].includes(user.plan || '') 
+                ? <AgenteDopamina /> 
+                : <Navigate to="/agentes" replace />
+            } 
+          />
+
           <Route path="/conselheiro" element={<Conselheiro />} />
-          
-          {/* ROTA DE SUPORTE */}
           <Route path="/suporte" element={<Support />} />
         </Route>
 
-        {/* PAINEL ADMINISTRATIVO */}
         <Route path="/admin" element={user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" replace />} />
-        
-        {/* Redirecionamento Global */}
         <Route path="*" element={<Navigate to={!user ? "/login" : user.role === 'admin' ? "/admin" : "/"} replace />} />
       </Routes>
     </BrowserRouter>
