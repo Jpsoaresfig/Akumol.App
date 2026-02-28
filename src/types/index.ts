@@ -6,12 +6,14 @@ export interface UserProfile {
   email: string;
   displayName: string;
   plan: PlanLevel;
+  bio: string;
   role: 'user' | 'family_admin' | 'admin';
   financialData: {
     hoursSaved: number;
     savingsRatio: number;
     totalInvested: number;
     balance: number;
+    
 
     history?: {
       yesterday?: number;
