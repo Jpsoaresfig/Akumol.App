@@ -3,10 +3,9 @@ module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
-  darkMode: 'class', // Certifique-se que isso está aqui para o dark mode
+  darkMode: 'class', 
   theme: {
     extend: {
-      // ✅ ADICIONE ISTO AQUI:
       keyframes: {
         'fade-in-down': {
           '0%': {
@@ -19,7 +18,8 @@ module.exports = {
           },
         }
       },
-      animations: {
+      // CORREÇÃO AQUI: De "animations" para "animation"
+      animation: {
         'fade-in-down': 'fade-in-down 0.5s ease-out forwards'
       }
     },
