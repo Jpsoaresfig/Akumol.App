@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* 1. ADICIONE ESTA LINHA AQUI PARA O TAILWIND V4 LER A CLASSE .dark */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-brand-primary: #4f46e5;
   /* Padrão: Cores para o modo claro */
