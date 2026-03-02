@@ -90,10 +90,26 @@ const Agentes: React.FC = () => {
       plan: 'Plus', 
       color: 'bg-pink-500', 
       locked: !['plus', 'ultimate'].includes(plan),
-      path: '/agentes/dopamina' // ✅ Rota adicionada
+      path: '/agentes/dopamina'
     },
-    { icon: Brain, name: 'Arquiteto', description: 'Converte economia em tempo de aposentadoria.', plan: 'Plus', color: 'bg-emerald-500', locked: !['plus', 'ultimate'].includes(plan) },
-    { icon: Users, name: 'Resiliência', description: 'Cofres invisíveis para blindagem familiar.', plan: 'Ultimate', color: 'bg-amber-500', locked: plan !== 'ultimate' },
+    { 
+      icon: Brain, 
+      name: 'Arquiteto', 
+      description: 'Converte economia em tempo de aposentadoria.', 
+      plan: 'Plus', 
+      color: 'bg-emerald-500', 
+      locked: !['plus', 'ultimate'].includes(plan),
+      path: '/agentes/arquiteto'
+    },
+    { 
+      icon: Users, 
+      name: 'Resiliência', 
+      description: 'Cofres invisíveis para blindagem familiar.', 
+      plan: 'Ultimate', 
+      color: 'bg-amber-500', 
+      locked: plan !== 'ultimate',
+      path: '/agentes/resiliencia'
+    },
   ];
 
   return (

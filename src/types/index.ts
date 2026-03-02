@@ -13,7 +13,7 @@ export interface UserProfile {
     savingsRatio: number;
     totalInvested: number;
     balance: number;
-    
+    monthlyExpenses: number;
 
     history?: {
       yesterday?: number;

@@ -8,12 +8,13 @@ import AgenteSombra from './pages/agentes/AgenteSombra';
 import AgenteRadar from './pages/agentes/AgenteRadar';
 import AgenteSentinela from './pages/agentes/AgenteSentinela';
 import AgenteDopamina from './pages/agentes/AgenteDopamina'; 
+import ArquitetoHeranca from './pages/agentes/ArquitetoHeranca';
 import Conselheiro from './pages/Counselor/CounselorChat'; 
 import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
 import Support from './pages/suport/Support'; 
 import UserHeader from './components/UserHeader';
-import Profile from './pages/login/Profile'; // ✅ Importado corretamente
+import Profile from './pages/login/Profile';
 
 const MainLayout = () => (
   <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
@@ -35,8 +36,8 @@ function App() {
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
         <div className="flex flex-col items-center">
           <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <div className="text-indigo-600 dark:text-indigo-400 font-black animate-pulse tracking-tighter text-center">
-            CARREGANDO GUARDIÃO DIGITAL...
+          <div className="text-indigo-600 dark:text-indigo-400 font-black animate-pulse tracking-tighter text-center uppercase">
+            Sincronizando Guardião...
           </div>
         </div>
       </div>
@@ -53,37 +54,37 @@ function App() {
 
         <Route element={user ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/" element={user?.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />} />
-          
-          {/* ✅ ROTA DO PERFIL ADICIONADA AQUI */}
           <Route path="/perfil" element={<Profile />} />
-          
           <Route path="/evolucao" element={<Evolucao />} />
           <Route path="/agentes" element={<Agentes />} />
           <Route path="/agentes/sentinela" element={<AgenteSentinela />} />
           
           <Route 
             path="/agentes/sombra" 
-            element={
-              user && ['premium', 'plus', 'ultimate'].includes(user.plan || '') 
-                ? <AgenteSombra /> 
-                : <Navigate to="/agentes" replace />
-            } 
+            element={user && ['premium', 'plus', 'ultimate'].includes(user.plan || '') ? <AgenteSombra /> : <Navigate to="/agentes" replace />} 
           />
 
           <Route 
             path="/agentes/radar" 
-            element={
-              user && ['premium', 'plus', 'ultimate'].includes(user.plan || '') 
-                ? <AgenteRadar /> 
-                : <Navigate to="/agentes" replace />
-            } 
+            element={user && ['premium', 'plus', 'ultimate'].includes(user.plan || '') ? <AgenteRadar /> : <Navigate to="/agentes" replace />} 
           />
 
           <Route 
             path="/agentes/dopamina" 
+            element={user && ['plus', 'ultimate'].includes(user.plan || '') ? <AgenteDopamina /> : <Navigate to="/agentes" replace />} 
+          />
+
+          {/* Rota Arquiteto vinculada aos dados financeiros do useAuth */}
+          <Route 
+            path="/agentes/arquiteto" 
             element={
               user && ['plus', 'ultimate'].includes(user.plan || '') 
-                ? <AgenteDopamina /> 
+                ? <div className="max-w-xl mx-auto mt-8">
+                    <ArquitetoHeranca 
+                      patrimonioTotal={user.financialData?.balance || 0} 
+                      gastosMensais={user.financialData?.monthlyExpenses || 0} 
+                    />
+                  </div>
                 : <Navigate to="/agentes" replace />
             } 
           />
