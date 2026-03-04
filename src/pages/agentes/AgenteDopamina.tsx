@@ -97,7 +97,7 @@ const AgenteDopamina: React.FC = () => {
         )}
 
         {/* Seletor de Humor */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-sm">
           <h3 className="text-slate-800 dark:text-white font-bold mb-4 flex items-center gap-2">
             <BrainCircuit className="text-slate-400" size={20} /> Como você está se sentindo agora?
           </h3>
@@ -159,14 +159,14 @@ const AgenteDopamina: React.FC = () => {
             <div className="relative flex items-center justify-center w-64 h-64 mb-16">
               {/* Círculo Animado */}
               <div 
-                className="absolute bg-pink-500/20 rounded-full transition-all duration-[3000ms] ease-in-out"
+                className="absolute bg-pink-500/20 rounded-full transition-all duration-3000 ease-in-out"
                 style={{ 
                   width: `${breatheScale * 100}%`, 
                   height: `${breatheScale * 100}%` 
                 }}
               />
               <div 
-                className="absolute bg-pink-500/40 rounded-full transition-all duration-[3000ms] ease-in-out delay-75"
+                className="absolute bg-pink-500/40 rounded-full transition-all duration-3000 ease-in-out delay-75"
                 style={{ 
                   width: `${breatheScale * 75}%`, 
                   height: `${breatheScale * 75}%` 

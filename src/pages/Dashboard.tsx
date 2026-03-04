@@ -164,6 +164,15 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error("Erro ao sair:", error);
+    }
+  };
+
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
 
   const patrimonioTotal = (financialData?.balance || 0) + (financialData?.totalInvested || 0);
@@ -183,7 +192,10 @@ const Dashboard: React.FC = () => {
           >
             {isDarkMode ? <Sun size={20} className="text-amber-400 fill-amber-400"/> : <Moon size={20} className="text-slate-600" />}
           </button>
-          <button onClick={logout} className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all">
+          <button 
+            onClick={handleLogout} 
+            className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+          >
             <LogOut size={20} />
           </button>
         </div>

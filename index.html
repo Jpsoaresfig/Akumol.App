@@ -1,10 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./src/img/Logo_branca_Akumol.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AKUMOL</title>
+    <script>
+      if (localStorage.getItem('theme') === 'light') {
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
