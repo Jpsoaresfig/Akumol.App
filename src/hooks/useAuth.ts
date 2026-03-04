@@ -58,32 +58,45 @@ export const useAuth = () => {
     };
   }, []);
 
-  // Atualiza dados no Firestore (Bio, Nome, Foto)
   const updateProfileData = async (data: Partial<UserProfile>) => {
-    if (!auth.currentUser) throw new Error("Usuário não autenticado");
-    const userRef = doc(db, "users", auth.currentUser.uid);
-    
-    // Se houver displayName ou photoURL, atualiza também no Firebase Auth Profile
-    if (data.displayName || data.photoURL) {
-      await updateProfile(auth.currentUser, {
-        displayName: data.displayName || auth.currentUser.displayName,
-        photoURL: data.photoURL || auth.currentUser.photoURL
-      });
-    }
+    try {
+      if (!auth.currentUser) throw new Error("Usuário não autenticado");
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      
+      if (data.displayName || data.photoURL) {
+        await updateProfile(auth.currentUser, {
+          displayName: data.displayName || auth.currentUser.displayName,
+          photoURL: data.photoURL || auth.currentUser.photoURL
+        });
+      }
 
-    await updateDoc(userRef, data);
+      await updateDoc(userRef, data);
+    } catch (error: any) {
+      alert("Erro ao atualizar perfil: " + error.message);
+      throw error;
+    }
   };
 
   const updateUserEmail = async (newEmail: string) => {
-    if (!auth.currentUser) throw new Error("Usuário não autenticado");
-    await updateEmail(auth.currentUser, newEmail);
-    const userRef = doc(db, "users", auth.currentUser.uid);
-    await updateDoc(userRef, { email: newEmail });
+    try {
+      if (!auth.currentUser) throw new Error("Usuário não autenticado");
+      await updateEmail(auth.currentUser, newEmail);
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      await updateDoc(userRef, { email: newEmail });
+    } catch (error: any) {
+      alert("Erro ao atualizar e-mail: " + error.message);
+      throw error;
+    }
   };
 
   const updateUserPassword = async (newPassword: string) => {
-    if (!auth.currentUser) throw new Error("Usuário não autenticado");
-    await updatePassword(auth.currentUser, newPassword);
+    try {
+      if (!auth.currentUser) throw new Error("Usuário não autenticado");
+      await updatePassword(auth.currentUser, newPassword);
+    } catch (error: any) {
+      alert("Erro ao atualizar senha: " + error.message);
+      throw error;
+    }
   };
 
   const resetPassword = async (email: string) => {

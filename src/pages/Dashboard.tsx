@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { 
@@ -8,13 +7,30 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// Import Capacitor plugins para sincronizar a Status Bar do celular
 import { StatusBar, Style } from '@capacitor/status-bar';
 
-import { doc, setDoc, onSnapshot, collection, query, getDocs } from 'firebase/firestore';
-import { db } from '../api/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../api/firebase';
 
 type Period = 'yesterday' | 'lastWeek' | 'lastMonth' | 'sixMonths' | 'lastYear';
+
+interface Subscription {
+  id?: string;
+  nome?: string;
+  valor: number;
+  statusUso: 'baixo' | 'medio' | 'alto';
+}
+
+interface FinancialData {
+  balance?: number;
+  totalInvested?: number;
+  salary?: number;
+  hoursSaved?: number;
+  dailyYield?: number;
+  totalSaved?: number;
+  subscriptions?: Subscription[];
+}
 
 const SentinelaWidget = ({ hourlyRate }: { hourlyRate: number }) => {
   const [url, setUrl] = useState('');
@@ -68,10 +84,9 @@ const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   
-  // 1. Inicia o estado com base no localStorage
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
   
-  const [financialData, setFinancialData] = useState<any>(null);
+  const [financialData, setFinancialData] = useState<FinancialData | null>(null);
   const [globalSavings, setGlobalSavings] = useState(0); 
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('lastMonth');
   
@@ -80,7 +95,6 @@ const Dashboard: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 2. Sincronização de Tema (Web + Android)
   useEffect(() => {
     const root = window.document.documentElement;
     
@@ -88,19 +102,19 @@ const Dashboard: React.FC = () => {
       if (isDarkMode) {
         root.classList.add('dark');
         localStorage.setItem('theme', 'dark');
-        // Nativo Android: Muda a Status Bar para Dark
         try { 
           await StatusBar.setStyle({ style: Style.Dark });
-          await StatusBar.setBackgroundColor({ color: '#020617' }); // slate-950
-        } catch (e) { /* Ignora se estiver no PC */ }
+          await StatusBar.setBackgroundColor({ color: '#020617' }); 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (e) { /* empty */ }
       } else {
         root.classList.remove('dark');
         localStorage.setItem('theme', 'light');
-        // Nativo Android: Muda a Status Bar para Light
         try { 
           await StatusBar.setStyle({ style: Style.Light });
           await StatusBar.setBackgroundColor({ color: '#F8FAFC' }); 
-        } catch (e) { /* Ignora se estiver no PC */ }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (e) { /* empty */ }
       }
     };
 
@@ -110,50 +124,41 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (!user?.uid) return;
     const unsub = onSnapshot(doc(db, 'users', user.uid), (doc) => {
-      if (doc.exists()) setFinancialData(doc.data().financialData);
+      if (doc.exists()) setFinancialData(doc.data().financialData as FinancialData);
     });
     return () => unsub();
   }, [user]);
 
   useEffect(() => {
-    const fetchGlobalData = async () => {
-      const q = query(collection(db, 'users'));
-      const querySnapshot = await getDocs(q);
-      let total = 0;
-      querySnapshot.forEach((doc) => {
-        total += doc.data().financialData?.totalSaved || 0;
-      });
-      setGlobalSavings(total);
-    };
-    fetchGlobalData();
+    const unsub = onSnapshot(doc(db, 'system', 'globalStats'), (doc) => {
+      if (doc.exists()) setGlobalSavings(doc.data().totalSaved || 0);
+    });
+    return () => unsub();
   }, []);
 
   const assinaturasParaCortar = useMemo(() => {
     const subs = financialData?.subscriptions || [];
-    return subs.filter((s: any) => s.statusUso === 'baixo');
+    return subs.filter((s: Subscription) => s.statusUso === 'baixo');
   }, [financialData]);
 
   const totalVazamentos = useMemo(() => {
-    return assinaturasParaCortar.reduce((acc: number, curr: any) => acc + curr.valor, 0);
+    return assinaturasParaCortar.reduce((acc: number, curr: Subscription) => acc + curr.valor, 0);
   }, [assinaturasParaCortar]);
 
   const handleTransaction = async (type: 'deposit' | 'withdraw') => {
     const amount = parseFloat(inputValue.replace(',', '.'));
     if (isNaN(amount) || amount <= 0 || !user?.uid) return;
-    if (type === 'withdraw' && amount > (financialData?.balance || 0)) return alert("Saldo insuficiente");
-
+    
     setIsProcessing(true);
-    const newBalance = type === 'deposit' ? (financialData?.balance || 0) + amount : (financialData?.balance || 0) - amount;
-
     try {
-      await setDoc(doc(db, 'users', user.uid), {
-        financialData: { balance: newBalance }
-      }, { merge: true });
+      const updateBalanceFunc = httpsCallable(functions, 'updateBalance');
+      await updateBalanceFunc({ amount, type });
       setShowDepositModal(false);
       setShowWithdrawModal(false);
       setInputValue('');
-    } catch (e) {
-      alert("Erro na transação" + e);
+    } catch (error: unknown) {
+      const e = error as Error;
+      alert("Erro na transação: " + e.message);
     } finally {
       setIsProcessing(false);
     }
@@ -172,7 +177,6 @@ const Dashboard: React.FC = () => {
           <span className="text-[10px] font-black bg-indigo-600 text-white px-2 py-1 rounded uppercase tracking-widest">Plano {user?.plan?.toUpperCase()}</span>
         </div>
         <div className="flex gap-3">
-          {/* Botão de Tema Corrigido */}
           <button 
             onClick={() => setIsDarkMode(!isDarkMode)} 
             className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:scale-105 active:scale-95"
@@ -205,7 +209,7 @@ const Dashboard: React.FC = () => {
 
           <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] shadow-sm flex flex-col justify-center transition-all">
             <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Saldo em Conta</p>
-            <h2 className="text-3xl font-black dark:text-white">{formatCurrency(financialData?.balance)}</h2>
+            <h2 className="text-3xl font-black dark:text-white">{formatCurrency(financialData?.balance || 0)}</h2>
           </div>
         </div>
 
@@ -251,7 +255,7 @@ const Dashboard: React.FC = () => {
 
           <div className="lg:col-span-4 space-y-6">
             <SentinelaWidget hourlyRate={hourlyRate} />
-            <div className="bg-gradient-to-br from-amber-400 to-orange-500 p-8 rounded-[2.5rem] text-white shadow-xl transition-all">
+            <div className="bg-linear-to-br from-amber-400 to-orange-500 p-8 rounded-[2.5rem] text-white shadow-xl transition-all">
               <div className="flex items-center gap-2 mb-4"><Users size={20} /><span className="text-[10px] font-black uppercase tracking-widest text-amber-100">Missão de Equipe</span></div>
               <h3 className="text-2xl font-bold">Economia Global</h3>
               <p className="text-4xl font-black mt-2">{formatCurrency(globalSavings)}</p>
@@ -262,7 +266,7 @@ const Dashboard: React.FC = () => {
       </main>
 
       {(showDepositModal || showWithdrawModal) && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-xl font-black dark:text-white">Gerir Saldo</h3>
