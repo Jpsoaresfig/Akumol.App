@@ -15,6 +15,7 @@ import LoginPage from './pages/login/Login';
 import Support from './pages/suport/Support'; 
 import UserHeader from './components/UserHeader';
 import Profile from './pages/login/Profile';
+import Goals from './pages/goals/Goals';
 
 const MainLayout = () => (
   <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
@@ -58,6 +59,7 @@ function App() {
           <Route path="/evolucao" element={<Evolucao />} />
           <Route path="/agentes" element={<Agentes />} />
           <Route path="/agentes/sentinela" element={<AgenteSentinela />} />
+          <Route path="/goals" element={<Goals />} />
           
           <Route 
             path="/agentes/sombra" 

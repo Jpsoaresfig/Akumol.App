@@ -5,7 +5,8 @@ import {
   ShieldCheck, 
   MessageSquareText,
   TrendingUp,
-  LifeBuoy 
+  LifeBuoy,
+  Target 
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -14,10 +15,10 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Itens principais de navegação (Removido o Suporte daqui)
   const menuItems = [
     { icon: Home, label: 'Início', path: '/' },
     { icon: TrendingUp, label: 'Evolução', path: '/evolucao' },
+    { icon: Target, label: 'Metas', path: '/goals' },
     { icon: MessageSquareText, label: 'Conselheiro', path: '/conselheiro', main: true },
     { icon: ShieldCheck, label: 'Agentes', path: '/agentes' },
   ];
