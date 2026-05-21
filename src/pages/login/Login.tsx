@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   updateProfile,
-  sendEmailVerification, 
-  signOut 
+  sendEmailVerification,
+  signOut
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../api/firebase';
 import { useAuth } from '../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, MailCheck } from 'lucide-react';
 
 import logoClara from '../../img/Logo_branca_Akumol.png';
 import logoEscura from '../../img/logo_preta_Akumol.png';
@@ -20,25 +19,26 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [resetMsg, setResetMsg] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const { resetPassword } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMsg('');
     setResetMsg('');
+    setNeedsVerification(false);
 
     try {
       if (isRegistering) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
-        
+
         await setDoc(doc(db, "users", userCredential.user.uid), {
           uid: userCredential.user.uid,
           displayName: name,
@@ -46,12 +46,12 @@ const LoginPage: React.FC = () => {
           plan: 'basic',
           role: 'user',
           createdAt: serverTimestamp(),
-          financialData: { 
+          financialData: {
             hoursSaved: 0,
             savingsRatio: 0,
             totalInvested: 0
           },
-          preferences: { 
+          preferences: {
             dopamineMode: true,
             weatherAutoSave: false
           }
@@ -61,19 +61,21 @@ const LoginPage: React.FC = () => {
         await signOut(auth);
 
         setIsRegistering(false);
-        setResetMsg("Conta criada com sucesso! Enviamos um link para o seu e-mail. Por favor, confirme-o antes de fazer login (verifique também o spam).");
-        
+        setNeedsVerification(true);
+        setResetMsg("Conta criada! Enviamos um e-mail de confirmação. Confirme antes de fazer login.");
+
       } else {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        
+        await userCredential.user.reload();
+
         if (!userCredential.user.emailVerified) {
-          await signOut(auth); 
-          setErrorMsg("Você precisa confirmar o seu e-mail antes de acessar. Verifique sua caixa de entrada ou spam.");
+          await signOut(auth);
+          setNeedsVerification(true);
+          setErrorMsg("Confirme o seu e-mail antes de acessar. Verifique a caixa de entrada ou spam.");
           setIsLoading(false);
           return;
         }
-
-        navigate('/');
+        // App.tsx redireciona automaticamente quando useAuth carregar o usuário
       }
     } catch (error: unknown) {
       console.error("Erro Auth:", error);
@@ -89,6 +91,26 @@ const LoginPage: React.FC = () => {
         }
       }
       setErrorMsg(mensagem);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email || !password) {
+      setErrorMsg("Preencha o e-mail e a senha para reenviar o link de verificação.");
+      return;
+    }
+    setIsLoading(true);
+    setErrorMsg('');
+    setResetMsg('');
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await sendEmailVerification(userCredential.user);
+      await signOut(auth);
+      setResetMsg("E-mail de verificação reenviado! Verifique a caixa de entrada ou spam.");
+    } catch {
+      setErrorMsg("Não foi possível reenviar. Verifique o e-mail e a senha.");
     } finally {
       setIsLoading(false);
     }
@@ -116,21 +138,21 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-200 dark:from-slate-950 dark:to-slate-900 p-4 font-sans transition-colors duration-500">
       <div className="w-full max-w-105 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-indigo-900/5 dark:shadow-black/50 p-8 sm:p-10 border border-white/50 dark:border-slate-800 transition-all duration-500 relative overflow-hidden">
-        
+
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="relative z-10">
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto mb-5 drop-shadow-md hover:scale-105 transition-transform duration-300">
-              <img 
-                src={logoClara} 
-                alt="Akumol" 
+              <img
+                src={logoClara}
+                alt="Akumol"
                 className="block dark:hidden w-full h-full object-contain"
               />
-              <img 
-                src={logoEscura} 
-                alt="Akumol" 
+              <img
+                src={logoEscura}
+                alt="Akumol"
                 className="hidden dark:block w-full h-full object-contain"
               />
             </div>
@@ -172,7 +194,7 @@ const LoginPage: React.FC = () => {
                 />
               </div>
             )}
-            
+
             <div>
               <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 ml-1">E-mail</label>
               <input
@@ -190,9 +212,9 @@ const LoginPage: React.FC = () => {
               <div className="flex justify-between items-end mb-1.5 ml-1 pr-1">
                 <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Senha</label>
                 {!isRegistering && (
-                  <button 
-                    type="button" 
-                    onClick={handleResetPassword} 
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
                     disabled={isLoading}
                     className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors disabled:opacity-50"
                   >
@@ -211,8 +233,8 @@ const LoginPage: React.FC = () => {
               />
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isLoading}
               className="w-full mt-6 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all disabled:opacity-70 disabled:scale-100"
             >
@@ -224,19 +246,32 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
 
+          {needsVerification && !isRegistering && (
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={isLoading}
+              className="w-full mt-3 flex items-center justify-center gap-2 border border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 font-semibold py-3.5 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-500/10 active:scale-[0.98] transition-all disabled:opacity-50 text-sm"
+            >
+              <MailCheck size={16} />
+              Reenviar e-mail de verificação
+            </button>
+          )}
+
           <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800/80 text-center">
-            <button 
+            <button
               type="button"
               onClick={() => {
                 setIsRegistering(!isRegistering);
                 setErrorMsg('');
                 setResetMsg('');
-              }} 
+                setNeedsVerification(false);
+              }}
               disabled={isLoading}
               className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors disabled:opacity-50"
             >
-              {isRegistering 
-                ? 'Já tem uma conta? Faça login' 
+              {isRegistering
+                ? 'Já tem uma conta? Faça login'
                 : 'Não tem conta? Cadastre-se grátis'}
             </button>
           </div>

@@ -18,14 +18,16 @@ import Profile from './pages/login/Profile';
 import Goals from './pages/goals/Goals';
 
 const MainLayout = () => (
-  <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300">
+  <div className="flex flex-col lg:flex-row h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300 overflow-hidden">
     <Sidebar />
-    <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 relative">
-      <UserHeader /> 
-      <div className="p-4 lg:p-8 pt-2 lg:pt-4"> 
-        <Outlet /> 
-      </div>
-    </main>
+    <div className="flex flex-col flex-1 min-h-0">
+      <UserHeader />
+      <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
+        <div className="p-4 lg:p-8 pt-4 lg:pt-6">
+          <Outlet />
+        </div>
+      </main>
+    </div>
   </div>
 );
 

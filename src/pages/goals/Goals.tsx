@@ -165,9 +165,9 @@ const Goals = () => {
 
           return (
             <div key={goal.id} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm relative group transition-all hover:shadow-md">
-              <button 
+              <button
                 onClick={() => handleDeleteGoal(goal.id)}
-                className="absolute top-6 right-6 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                className="absolute top-6 right-6 text-slate-300 hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
               >
                 <Trash2 size={18} />
               </button>
