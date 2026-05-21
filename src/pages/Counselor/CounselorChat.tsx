@@ -87,16 +87,23 @@ Regras: Questione compras impulsivas, mostre custo de oportunidade, use bullet p
       );
 
       const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
+      if (data.error) {
+        const msg: string = data.error.message || '';
+        if (data.error.code === 429 || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED')) {
+          throw new Error('QUOTA_EXCEEDED');
+        }
+        throw new Error(msg);
+      }
 
       const reply = data.candidates[0].content.parts[0].text;
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (err: unknown) {
-      console.error('Gemini error:', err);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Tive um problema técnico. Verifique a sua chave de API nas configurações e tente novamente.'
-      }]);
+      const e = err as Error;
+      console.error('Gemini error:', e);
+      const content = e.message === 'QUOTA_EXCEEDED'
+        ? 'Limite de uso da API atingido. Aguarde alguns minutos e tente novamente, ou gere uma nova chave em aistudio.google.com.'
+        : 'Tive um problema técnico. Verifique a sua chave de API nas configurações ⚙ e tente novamente.';
+      setMessages(prev => [...prev, { role: 'assistant', content }]);
     } finally {
       setIsLoading(false);
     }

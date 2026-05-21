@@ -76,13 +76,15 @@ const typeLabel: Record<InsightType, string> = {
   miles: 'Milhas',
 };
 
-const SYSTEM_PROMPT = `Você é o Agente Radar Akumol, especialista em encontrar promoções reais no Brasil.
-Use a ferramenta de busca do Google para encontrar informações ATUAIS e REAIS.
+const SYSTEM_PROMPT = `Você é o Agente Radar Akumol, especialista em economia inteligente no Brasil.
+Com base no produto ou loja informado, sugira oportunidades reais e conhecidas de economia para consumidores brasileiros.
 
-Para o produto/loja informado, pesquise e liste:
-1. Portais de cashback ativos (Méliuz, Inter Shop, Ame Digital, C6, Nubank Rewards, etc.) com o percentual real
-2. Cupons de desconto válidos em grandes varejistas brasileiros (Americanas, Magalu, Shopee, Amazon BR, etc.)
-3. Oportunidades de acúmulo de milhas/pontos em compras (Livelo, Esfera, TudoAzul, Smiles)
+Para o produto/loja informado, liste:
+1. Portais de cashback conhecidos no Brasil (Méliuz, Inter Shop, Ame Digital, C6 Bank, Nubank Rewards, PicPay, Livelo) com percentuais típicos por categoria
+2. Cupons e estratégias de desconto em varejistas brasileiros relevantes (Americanas, Magazine Luiza, Shopee, Amazon BR, Mercado Livre, Casas Bahia)
+3. Oportunidades de acúmulo de milhas/pontos (Livelo, Esfera, TudoAzul, Smiles, Latam Pass) para a categoria do produto
+
+Use conhecimento real sobre esses programas — percentuais típicos, como ativar, onde se cadastrar.
 
 Responda SOMENTE com um array JSON válido, sem texto adicional, sem markdown, sem explicações.
 Formato exato:
@@ -90,7 +92,7 @@ Formato exato:
   {
     "type": "cashback",
     "title": "Título curto e claro",
-    "description": "Descrição concreta com detalhes da promoção encontrada, incluindo o portal e como ativar",
+    "description": "Descrição concreta com detalhes da oportunidade, portal e como ativar",
     "potentialValue": 0,
     "actionText": "Ver Oferta",
     "actionUrl": "https://url-real-do-portal.com.br"
@@ -98,9 +100,9 @@ Formato exato:
 ]
 
 Tipos válidos: "cashback", "coupon", "miles"
-potentialValue: estimativa de economia em BRL (número inteiro, pode ser 0)
-actionUrl: URL real e válida do portal ou loja
-Retorne entre 3 e 6 resultados. Se não encontrar algo real, não invente.`;
+potentialValue: estimativa de economia em BRL (número inteiro, pode ser 0 se percentual variável)
+actionUrl: URL real e válida do portal (ex: meliuz.com.br, interpag.com.br, livelo.com.br)
+Retorne entre 4 e 6 resultados variados. Baseie-se em programas reais existentes no Brasil.`;
 
 const AgenteRadar: React.FC = () => {
   const navigate = useNavigate();
@@ -172,17 +174,22 @@ const AgenteRadar: React.FC = () => {
             systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
             contents: [{
               role: 'user',
-              parts: [{ text: `Pesquise promoções, cashbacks e cupons para: ${query}` }]
+              parts: [{ text: `Encontre oportunidades de cashback, cupons e milhas para: ${query}` }]
             }],
-            tools: [{ google_search: {} }],
-            generationConfig: { temperature: 0.2 },
+            generationConfig: { temperature: 0.3 },
           }),
         }
       );
 
       const data = await res.json();
 
-      if (data.error) throw new Error(data.error.message);
+      if (data.error) {
+        const msg: string = data.error.message || '';
+        if (data.error.code === 429 || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED')) {
+          throw new Error('QUOTA_EXCEEDED');
+        }
+        throw new Error(msg);
+      }
 
       const text: string = data.candidates?.[0]?.content?.parts
         ?.map((p: { text?: string }) => p.text || '')
@@ -198,10 +205,12 @@ const AgenteRadar: React.FC = () => {
     } catch (err: unknown) {
       const e = err as Error;
       console.error('Radar error:', e);
-      if (e.message?.includes('API_KEY') || e.message?.includes('key')) {
-        setErrorMsg('Chave de API inválida ou expirada. Verifique nas configurações.');
+      if (e.message === 'QUOTA_EXCEEDED') {
+        setErrorMsg('Limite de uso da API atingido. Aguarde alguns minutos e tente novamente, ou gere uma nova chave em aistudio.google.com.');
+      } else if (e.message?.includes('API_KEY') || e.message?.includes('key') || e.message?.includes('API key')) {
+        setErrorMsg('Chave de API inválida ou expirada. Clique em ⚙ para configurar uma nova chave.');
       } else {
-        setErrorMsg('Falha na comunicação com a IA. Tente novamente.');
+        setErrorMsg('Falha na comunicação com a IA. Verifique sua conexão e tente novamente.');
       }
     } finally {
       setIsScanning(false);
@@ -249,7 +258,7 @@ const AgenteRadar: React.FC = () => {
         <div>
           <h1 className="text-2xl font-black text-slate-800 dark:text-white">Agente Radar</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            IA com busca real na web — encontra cashbacks, cupons e milhas.
+            IA especializada — encontra cashbacks, cupons e milhas no Brasil.
           </p>
         </div>
       </div>
@@ -310,7 +319,7 @@ const AgenteRadar: React.FC = () => {
             </h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
               {isScanning
-                ? 'Consultando Google em tempo real via Gemini IA'
+                ? 'Analisando cashbacks e promoções via Gemini IA'
                 : hasScanned
                   ? `${pendingCount} oportunidade${pendingCount !== 1 ? 's' : ''} encontrada${pendingCount !== 1 ? 's' : ''}`
                   : 'Digite um produto ou loja para começar'}
@@ -357,7 +366,7 @@ const AgenteRadar: React.FC = () => {
             <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl text-center">
               <Search size={40} className="text-slate-300 dark:text-slate-700 mb-3" />
               <p className="text-sm text-slate-400 font-medium">Digite o produto acima para rastrear promoções reais</p>
-              <p className="text-xs text-slate-300 dark:text-slate-600 mt-1">Powered by Gemini + Google Search</p>
+              <p className="text-xs text-slate-300 dark:text-slate-600 mt-1">Powered by Gemini AI</p>
             </div>
           )}
 
@@ -366,7 +375,7 @@ const AgenteRadar: React.FC = () => {
             <div className="flex flex-col items-center justify-center py-16 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3" />
               <p className="text-sm text-slate-500 dark:text-slate-400 font-medium animate-pulse">
-                Buscando promoções reais na web...
+                Analisando oportunidades de economia...
               </p>
               <p className="text-xs text-slate-400 mt-1">Isso pode levar alguns segundos</p>
             </div>

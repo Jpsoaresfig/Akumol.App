@@ -39,10 +39,10 @@ const AgenteSombra: React.FC = () => {
   }, [user]);
 
   const adicionarAssinatura = async () => {
-    if (!novoNome || !novoValor || !user?.uid) return;
-    
+    if (!novoNome.trim() || !novoValor || !user?.uid) return;
+
     const valorNum = parseFloat(novoValor.replace(',', '.'));
-    if (isNaN(valorNum)) return alert("Valor inválido");
+    if (isNaN(valorNum) || valorNum <= 0) return;
 
     const nova: Assinatura = {
       // eslint-disable-next-line react-hooks/purity

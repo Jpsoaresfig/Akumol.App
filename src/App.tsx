@@ -9,6 +9,7 @@ import AgenteRadar from './pages/agentes/AgenteRadar';
 import AgenteSentinela from './pages/agentes/AgenteSentinela';
 import AgenteDopamina from './pages/agentes/AgenteDopamina'; 
 import ArquitetoHeranca from './pages/agentes/ArquitetoHeranca';
+import AgenteResiliencia from './pages/agentes/AgenteResiliencia';
 import Conselheiro from './pages/Counselor/CounselorChat'; 
 import AdminPanel from './pages/Admin';
 import LoginPage from './pages/login/Login';
@@ -91,6 +92,11 @@ function App() {
                   </div>
                 : <Navigate to="/agentes" replace />
             } 
+          />
+
+          <Route
+            path="/agentes/resiliencia"
+            element={user && user.plan === 'ultimate' ? <AgenteResiliencia /> : <Navigate to="/agentes" replace />}
           />
 
           <Route path="/conselheiro" element={<Conselheiro />} />
