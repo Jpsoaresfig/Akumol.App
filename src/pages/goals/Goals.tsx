@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Target, Calculator, Calendar, Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../api/firebase';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { addDoc, deleteDoc, doc, collection } from 'firebase/firestore';
+import { useFirestoreCollection } from '../../hooks/useFirestoreCollection';
+import { orderBy } from 'firebase/firestore';
 
 interface Goal {
   id: string;
@@ -13,30 +15,13 @@ interface Goal {
 
 const Goals = () => {
   const { user } = useAuth();
-  const [goals, setGoals] = useState<Goal[]>([]);
-  
+  const { data: goals } = useFirestoreCollection<Goal>('users', user?.uid || '--', 'goals', orderBy('createdAt', 'desc'));
+
   const [goalName, setGoalName] = useState('');
   const [targetAmount, setTargetAmount] = useState<number | ''>('');
   const [monthlySavings, setMonthlySavings] = useState<number | ''>('');
   const [isAdding, setIsAdding] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  useEffect(() => {
-    if (!user?.uid) return;
-
-    const goalsRef = collection(db, 'users', user.uid, 'goals');
-    const q = query(goalsRef, orderBy('createdAt', 'desc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const goalsData: Goal[] = [];
-      snapshot.forEach((doc) => {
-        goalsData.push({ id: doc.id, ...doc.data() } as Goal);
-      });
-      setGoals(goalsData);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
 
   const handleAddGoal = async () => {
     if (!goalName || !targetAmount || !monthlySavings || !user?.uid) return;
@@ -49,7 +34,7 @@ const Goals = () => {
         monthlySavings: Number(monthlySavings),
         createdAt: new Date()
       });
-      
+
       setGoalName('');
       setTargetAmount('');
       setMonthlySavings('');
@@ -70,7 +55,7 @@ const Goals = () => {
     }
   };
 
-  const formatCurrency = (val: number) => 
+  const formatCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   return (
@@ -84,7 +69,7 @@ const Goals = () => {
             Planeje suas conquistas e saiba exatamente quando irá alcançá-las.
           </p>
         </div>
-        <button 
+        <button
           onClick={() => setIsAdding(!isAdding)}
           className="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
         >
@@ -98,8 +83,8 @@ const Goals = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
               <label className="block text-xs font-bold uppercase text-slate-400 mb-2">O que quer conquistar?</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Ex: Viagem, Carro..."
                 value={goalName}
                 onChange={(e) => setGoalName(e.target.value)}
@@ -108,8 +93,8 @@ const Goals = () => {
             </div>
             <div>
               <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Valor Total (R$)</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 placeholder="0.00"
                 value={targetAmount}
                 onChange={(e) => setTargetAmount(Number(e.target.value))}
@@ -118,8 +103,8 @@ const Goals = () => {
             </div>
             <div>
               <label className="block text-xs font-bold uppercase text-slate-400 mb-2">Poupando por mês (R$)</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 placeholder="0.00"
                 value={monthlySavings}
                 onChange={(e) => setMonthlySavings(Number(e.target.value))}
@@ -128,14 +113,14 @@ const Goals = () => {
             </div>
           </div>
           <div className="flex justify-end gap-3">
-            <button 
+            <button
               onClick={() => setIsAdding(false)}
               disabled={isProcessing}
               className="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
             >
               Cancelar
             </button>
-            <button 
+            <button
               onClick={handleAddGoal}
               disabled={!goalName || !targetAmount || !monthlySavings || isProcessing}
               className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md disabled:opacity-50 active:scale-95 transition-all"

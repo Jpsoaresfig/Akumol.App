@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { ShieldCheck, Zap, TrendingUp, Users, ArrowUpRight, Target, Clock, X, Plus, Minus } from 'lucide-react';
+import { ShieldCheck, Zap, TrendingUp, Users, ArrowUpRight, Clock, Plus, Minus, X, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { doc, onSnapshot } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '../api/firebase';
+import { functions } from '../api/firebase';
+import { useFirestoreDocument } from '../hooks/useFirestoreDocument';
 
 type TransactionType = 'deposit' | 'withdraw';
 
@@ -15,14 +15,19 @@ interface Subscription {
   statusUso: 'baixo' | 'medio' | 'alto';
 }
 
-interface FinancialData {
-  balance?: number;
-  totalInvested?: number;
+interface DashboardFinancialData {
+  hoursSaved: number;
+  savingsRatio: number;
+  totalInvested: number;
+  balance: number;
+  monthlyExpenses: number;
   salary?: number;
-  hoursSaved?: number;
   dailyYield?: number;
-  totalSaved?: number;
   subscriptions?: Subscription[];
+}
+
+interface GlobalStats {
+  totalSaved?: number;
 }
 
 const SentinelaWidget = ({ hourlyRate }: { hourlyRate: number }) => {
@@ -81,30 +86,16 @@ const SentinelaWidget = ({ hourlyRate }: { hourlyRate: number }) => {
   );
 };
 
-const Dashboard: React.FC = () => {
+const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [financialData, setFinancialData] = useState<FinancialData | null>(null);
-  const [globalSavings, setGlobalSavings] = useState(0);
+  const financialData = user?.financialData as DashboardFinancialData | undefined;
+  const { data: globalStats } = useFirestoreDocument<GlobalStats>('system', 'globalStats');
+
   const [showModal, setShowModal] = useState<TransactionType | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-
-  useEffect(() => {
-    if (!user?.uid) return;
-    const unsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
-      if (snap.exists()) setFinancialData(snap.data().financialData as FinancialData);
-    });
-    return () => unsub();
-  }, [user?.uid]);
-
-  useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'system', 'globalStats'), (snap) => {
-      if (snap.exists()) setGlobalSavings(snap.data().totalSaved || 0);
-    });
-    return () => unsub();
-  }, []);
 
   const assinaturasParaCortar = useMemo(() => {
     return (financialData?.subscriptions || []).filter((s) => s.statusUso === 'baixo');
@@ -136,15 +127,15 @@ const Dashboard: React.FC = () => {
 
   const patrimonioTotal = (financialData?.balance || 0) + (financialData?.totalInvested || 0);
   const hourlyRate = (financialData?.salary || 3000) / 160;
+  const globalSavings = globalStats?.totalSaved || 0;
 
   return (
     <div className="max-w-7xl mx-auto space-y-5 pb-6">
 
-      {/* SAUDAÇÃO */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
         <div>
           <h2 className="text-xl md:text-2xl font-black dark:text-white">
-            Olá, {user?.displayName?.split(' ')[0]} 👋
+            Olá, {user?.displayName?.split(' ')[0]}
           </h2>
           <p className="text-sm text-slate-400 mt-0.5">Aqui está o resumo do seu patrimônio.</p>
         </div>
@@ -153,9 +144,7 @@ const Dashboard: React.FC = () => {
         </span>
       </div>
 
-      {/* CARDS TOPO */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Patrimônio total */}
         <div className="sm:col-span-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-sm relative overflow-hidden">
           <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Patrimônio Total</p>
           <h2 className="text-3xl md:text-4xl font-black dark:text-white tracking-tighter">{fmt(patrimonioTotal)}</h2>
@@ -175,7 +164,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Saldo em conta */}
         <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-sm flex flex-col justify-between">
           <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Saldo em Conta</p>
           <h2 className="text-2xl md:text-3xl font-black dark:text-white">{fmt(financialData?.balance || 0)}</h2>
@@ -191,9 +179,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* LINHA DO MEIO */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Vazamentos */}
         <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 md:p-8 rounded-3xl shadow-sm">
           <div className="flex items-center gap-2 mb-3 text-red-500">
             <Zap size={16} />
@@ -216,7 +202,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Métricas */}
         <div className="lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-4">
           <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800">
             <Target className="text-green-500 mb-3" size={20} />
@@ -231,7 +216,6 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* LINHA INFERIOR */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SentinelaWidget hourlyRate={hourlyRate} />
         <div className="bg-gradient-to-br from-amber-400 to-orange-500 p-6 rounded-3xl text-white shadow-xl">
@@ -247,7 +231,6 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL TRANSAÇÃO */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in">
           <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">

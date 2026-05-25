@@ -1,18 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, BrainCircuit, Settings, X, Loader2, User } from 'lucide-react';
+import { Send, BrainCircuit, Loader2, User, Settings, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { db } from '../../api/firebase';
-import { getDoc, doc } from 'firebase/firestore';
-
-const resolveGeminiKey = async (): Promise<string> => {
-  const local = localStorage.getItem('gemini_api_key');
-  if (local) return local;
-  try {
-    const snap = await getDoc(doc(db, 'config', 'agents'));
-    if (snap.exists()) return snap.data().geminiApiKey || '';
-  } catch { /* sem config global */ }
-  return '';
-};
+import { functions } from '../../api/firebase';
+import { httpsCallable } from 'firebase/functions';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -28,7 +18,6 @@ const Conselheiro: React.FC = () => {
     { role: 'assistant', content: 'Olá! Sou o seu Conselheiro Akumol. Tenho acesso aos seus dados financeiros em tempo real. Como posso ajudar hoje?' }
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
   const [showSettings, setShowSettings] = useState(false);
   const [tempKey, setTempKey] = useState('');
 
@@ -38,20 +27,14 @@ const Conselheiro: React.FC = () => {
 
   const handleSaveApiKey = (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('gemini_api_key', tempKey);
-    setApiKey(tempKey);
+    if (!tempKey.trim()) return;
+    localStorage.setItem('akumol_gemini_key', tempKey.trim());
     setShowSettings(false);
+    setTempKey('');
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim()) return;
-
-    const resolvedKey = apiKey || await resolveGeminiKey();
-    if (!resolvedKey) {
-      setTempKey('');
-      setShowSettings(true);
-      return;
-    }
+    if (!message.trim() || !user) return;
 
     const userMsg: Message = { role: 'user', content: message };
     const updated = [...messages, userMsg];
@@ -59,51 +42,22 @@ const Conselheiro: React.FC = () => {
     setMessage('');
     setIsLoading(true);
 
-    const systemInstruction = `Você é o Conselheiro Akumol, assistente financeiro de elite. Seja direto e analítico.
-Dados atuais do usuário:
-- Saldo: R$ ${(user?.financialData?.balance || 0).toFixed(2)}
-- Investido: R$ ${(user?.financialData?.totalInvested || 0).toFixed(2)}
-- Horas de vida salvas: ${user?.financialData?.hoursSaved || 0}h
-- Plano: ${(user?.plan || 'basic').toUpperCase()}
-Regras: Questione compras impulsivas, mostre custo de oportunidade, use bullet points, seja objetivo.`;
-
-    const geminiHistory = updated.slice(1).map(msg => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }]
-    }));
-
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${resolvedKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemInstruction }] },
-            contents: geminiHistory,
-            generationConfig: { temperature: 0.7 }
-          })
+      const askCounselor = httpsCallable(functions, 'askCounselor');
+      const result = await askCounselor({
+        messages: updated.map(msg => ({ role: msg.role, content: msg.content })),
+        userFinancials: {
+          saldo: user.financialData?.balance || 0,
+          investido: user.financialData?.totalInvested || 0,
+          horasSalvas: user.financialData?.hoursSaved || 0,
         }
-      );
+      });
 
-      const data = await res.json();
-      if (data.error) {
-        const msg: string = data.error.message || '';
-        if (data.error.code === 429 || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED')) {
-          throw new Error('QUOTA_EXCEEDED');
-        }
-        throw new Error(msg);
-      }
-
-      const reply = data.candidates[0].content.parts[0].text;
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      const data = result.data as { reply: string };
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
     } catch (err: unknown) {
-      const e = err as Error;
-      console.error('Gemini error:', e);
-      const content = e.message === 'QUOTA_EXCEEDED'
-        ? 'Limite de uso da API atingido. Aguarde alguns minutos e tente novamente, ou gere uma nova chave em aistudio.google.com.'
-        : 'Tive um problema técnico. Verifique a sua chave de API nas configurações ⚙ e tente novamente.';
-      setMessages(prev => [...prev, { role: 'assistant', content }]);
+      console.error('Counselor error:', err);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Tive um problema técnico. Tente novamente em alguns instantes.' }]);
     } finally {
       setIsLoading(false);
     }
@@ -133,13 +87,9 @@ Regras: Questione compras impulsivas, mostre custo de oportunidade, use bullet p
             </span>
           </div>
         </div>
-        <button
-          onClick={() => { setTempKey(apiKey); setShowSettings(true); }}
-          className="p-2.5 text-slate-400 hover:text-indigo-600 bg-slate-100 dark:bg-slate-800 rounded-xl transition-all active:scale-95"
-          title="Configurar API Key"
-        >
-          <Settings size={18} />
-        </button>
+        <div className="p-2.5 text-transparent select-none">
+          &nbsp;
+        </div>
       </div>
 
       {/* MENSAGENS */}

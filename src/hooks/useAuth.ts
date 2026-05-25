@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { auth, db } from '../api/firebase';
 import { 
@@ -13,6 +12,10 @@ import {
 
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import type { UserProfile } from '../types';
+
+const dispatchToast = (message: string, type: 'success' | 'error' = 'success') => {
+  window.dispatchEvent(new CustomEvent('akumol-toast', { detail: { message, type } }));
+};
 
 export const useAuth = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -71,8 +74,10 @@ export const useAuth = () => {
       }
 
       await updateDoc(userRef, data);
-    } catch (error: any) {
-      alert("Erro ao atualizar perfil: " + error.message);
+      dispatchToast('Perfil atualizado com sucesso!');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Erro desconhecido';
+      dispatchToast('Erro ao atualizar perfil: ' + msg, 'error');
       throw error;
     }
   };
@@ -83,8 +88,10 @@ export const useAuth = () => {
       await updateEmail(auth.currentUser, newEmail);
       const userRef = doc(db, "users", auth.currentUser.uid);
       await updateDoc(userRef, { email: newEmail });
-    } catch (error: any) {
-      alert("Erro ao atualizar e-mail: " + error.message);
+      dispatchToast('E-mail atualizado com sucesso!');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Erro desconhecido';
+      dispatchToast('Erro ao atualizar e-mail: ' + msg, 'error');
       throw error;
     }
   };
@@ -93,8 +100,10 @@ export const useAuth = () => {
     try {
       if (!auth.currentUser) throw new Error("Usuário não autenticado");
       await updatePassword(auth.currentUser, newPassword);
-    } catch (error: any) {
-      alert("Erro ao atualizar senha: " + error.message);
+      dispatchToast('Senha atualizada com sucesso!');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Erro desconhecido';
+      dispatchToast('Erro ao atualizar senha: ' + msg, 'error');
       throw error;
     }
   };
@@ -103,8 +112,9 @@ export const useAuth = () => {
     try {
       await sendPasswordResetEmail(auth, email);
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Erro desconhecido';
+      return { success: false, error: msg };
     }
   };
 

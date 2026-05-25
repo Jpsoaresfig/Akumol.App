@@ -1,5 +1,6 @@
 
 export type PlanLevel = 'basic' | 'premium' | 'plus' | 'ultimate';
+
 export interface UserProfile {
   photoURL: string | undefined;
   uid: string;
@@ -7,29 +8,21 @@ export interface UserProfile {
   displayName: string;
   plan: PlanLevel;
   bio: string;
-  role: 'user' | 'family_admin' | 'admin';
+  role: 'user' | 'admin';
+  onboardingComplete?: boolean;
   financialData: {
     hoursSaved: number;
     savingsRatio: number;
     totalInvested: number;
     balance: number;
     monthlyExpenses: number;
-
-    history?: {
-      yesterday?: number;
-      lastWeek?: number;
-      lastMonth?: number;
-      sixMonths?: number;
-      lastYear?: number;
-  };
+    salary?: number;
   };
   preferences: {
     dopamineMode: boolean;
-    weatherAutoSave: boolean;
   };
 }
 
-// Adicione ao src/types/index.ts
 export interface SupportTicket {
   id?: string;
   userId: string;
@@ -40,3 +33,23 @@ export interface SupportTicket {
   status: 'open' | 'resolved';
   createdAt: Date;
 }
+
+export interface AgentInfo {
+  id: string;
+  name: string;
+  description: string;
+  plan: string;
+  color: string;
+  path: string;
+  icon: string;
+  needs: string[];
+}
+
+export const AGENTS_INFO: AgentInfo[] = [
+  { id: 'sentinela', name: 'Sentinela', description: 'O filtro de 72h contra compras por impulso.', plan: 'Basic', color: 'bg-indigo-600', path: '/agentes/sentinela', icon: 'ShieldCheck', needs: [] },
+  { id: 'sombra', name: 'Sombra', description: 'Exterminador de taxas e assinaturas inúteis.', plan: 'Premium', color: 'bg-red-500', path: '/agentes/sombra', icon: 'Zap', needs: ['firestore'] },
+  { id: 'radar', name: 'Radar', description: 'Stacking automático de milhas e cashbacks.', plan: 'Premium', color: 'bg-orange-500', path: '/agentes/radar', icon: 'Target', needs: ['gemini', 'google_search'] },
+  { id: 'dopamina', name: 'Dopamina', description: 'Bloqueio de gastos por humor e estresse.', plan: 'Plus', color: 'bg-pink-500', path: '/agentes/dopamina', icon: 'HeartPulse', needs: [] },
+  { id: 'arquiteto', name: 'Arquiteto', description: 'Converte economia em tempo de aposentadoria.', plan: 'Plus', color: 'bg-emerald-500', path: '/agentes/arquiteto', icon: 'Brain', needs: ['firestore'] },
+  { id: 'resiliencia', name: 'Resiliência', description: 'Cofres invisíveis para blindagem familiar.', plan: 'Ultimate', color: 'bg-amber-500', path: '/agentes/resiliencia', icon: 'Users', needs: [] },
+];

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sun, Moon } from 'lucide-react';
-import { StatusBar, Style } from '@capacitor/status-bar';
 
 const routeTitles: Record<string, string> = {
   '/': 'Início',
@@ -30,11 +29,17 @@ const UserHeader: React.FC = () => {
       if (isDark) {
         root.classList.add('dark');
         localStorage.setItem('theme', 'dark');
-        try { await StatusBar.setStyle({ style: Style.Dark }); await StatusBar.setBackgroundColor({ color: '#020617' }); } catch { /* web */ }
+        try {
+          const { StatusBar, Style } = await import('@capacitor/status-bar');
+          await StatusBar.setStyle({ style: Style.Dark }); await StatusBar.setBackgroundColor({ color: '#020617' });
+        } catch { /* web fallback */ }
       } else {
         root.classList.remove('dark');
         localStorage.setItem('theme', 'light');
-        try { await StatusBar.setStyle({ style: Style.Light }); await StatusBar.setBackgroundColor({ color: '#F8FAFC' }); } catch { /* web */ }
+        try {
+          const { StatusBar, Style } = await import('@capacitor/status-bar');
+          await StatusBar.setStyle({ style: Style.Light }); await StatusBar.setBackgroundColor({ color: '#F8FAFC' });
+        } catch { /* web fallback */ }
       }
     };
     apply();

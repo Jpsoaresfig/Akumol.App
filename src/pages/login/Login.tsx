@@ -8,7 +8,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../api/firebase';
-import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle, CheckCircle2, MailCheck } from 'lucide-react';
 
 import logoClara from '../../img/Logo_branca_Akumol.png';
@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
   const [resetMsg, setResetMsg] = useState('');
   const [needsVerification, setNeedsVerification] = useState(false);
 
-  const { resetPassword } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,23 +116,12 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleResetPassword = async () => {
+  const handleNavigateReset = () => {
     if (!email) {
       setErrorMsg("Insira o seu e-mail no campo acima para recuperar a senha.");
       return;
     }
-    setIsLoading(true);
-    setErrorMsg('');
-    try {
-      const res = await resetPassword(email);
-      if (res.success) {
-        setResetMsg("E-mail de recuperação enviado! Verifique a sua caixa de entrada.");
-      } else {
-        setErrorMsg("Erro ao enviar e-mail de recuperação.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    navigate(`/recuperar-senha?email=${encodeURIComponent(email)}`);
   };
 
   return (
@@ -214,9 +203,8 @@ const LoginPage: React.FC = () => {
                 {!isRegistering && (
                   <button
                     type="button"
-                    onClick={handleResetPassword}
-                    disabled={isLoading}
-                    className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors disabled:opacity-50"
+                    onClick={handleNavigateReset}
+                    className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
                   >
                     Esqueceu?
                   </button>

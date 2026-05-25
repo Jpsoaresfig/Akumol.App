@@ -1,8 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getFunctions } from "firebase/functions"; 
+import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { getFunctions } from "firebase/functions";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -19,3 +19,20 @@ export const analytics = getAnalytics(app);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const functions = getFunctions(app);
+
+let persistenceEnabled = false;
+const enablePersistence = () => {
+  if (persistenceEnabled) return;
+  persistenceEnabled = true;
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('Firestore persistence: multiple tabs open, persistence disabled');
+    } else if (err.code === 'unimplemented') {
+      console.warn('Firestore persistence: not supported in this environment');
+    }
+  });
+};
+
+enablePersistence();
+
+export { enablePersistence };

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { db } from '../api/firebase';
 import {
   collection, query, getDocs, updateDoc, doc,
-  deleteDoc, Timestamp, getDoc, setDoc
+  deleteDoc, getDoc, setDoc
 } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -11,18 +11,7 @@ import {
   CheckCircle2, AlertCircle, Circle, Zap, Target,
   HeartPulse, Brain, RefreshCw, KeyRound
 } from 'lucide-react';
-import type { UserProfile, PlanLevel } from '../types';
-
-interface SupportTicket {
-  id: string;
-  userId?: string;
-  userName?: string;
-  userEmail?: string;
-  type: string;
-  message: string;
-  status: string;
-  createdAt?: Timestamp;
-}
+import type { UserProfile, PlanLevel, SupportTicket } from '../types';
 
 interface AgentsConfig {
   geminiApiKey: string;
@@ -163,7 +152,11 @@ const AdminPanel: React.FC = () => {
     try {
       const snap = await getDocs(query(collection(db, 'support_tickets')));
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as SupportTicket));
-      setTickets(list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+      setTickets(list.sort((a, b) => {
+        const aTime = (a.createdAt as unknown as { seconds?: number })?.seconds || 0;
+        const bTime = (b.createdAt as unknown as { seconds?: number })?.seconds || 0;
+        return bTime - aTime;
+      }));
     } catch (e) { console.error(e); }
     setLoading(false);
   }, [isAdmin]);
@@ -449,7 +442,7 @@ const AdminPanel: React.FC = () => {
                               {t.type === 'error' ? 'Erro' : 'Sugestão'}
                             </span>
                             <span className="text-[10px] text-slate-400 font-bold">
-                              {t.createdAt?.toDate?.().toLocaleDateString('pt-BR') ?? 'Recente'}
+                              {(t.createdAt as unknown as { toDate?: () => Date })?.toDate?.().toLocaleDateString('pt-BR') ?? 'Recente'}
                             </span>
                           </div>
                           <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
@@ -460,7 +453,7 @@ const AdminPanel: React.FC = () => {
                           </p>
                         </div>
                         <button
-                          onClick={() => deleteTicket(t.id)}
+                          onClick={() => t.id && deleteTicket(t.id)}
                           className="self-start p-3 text-slate-300 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-500/10 rounded-2xl transition-all"
                           title="Resolver"
                         >

@@ -3,7 +3,8 @@ import { ShieldCheck, ChevronLeft, Plus, Clock, Lock, Unlock, Trash2, AlertOctag
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../api/firebase';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { addDoc, deleteDoc, doc, collection, orderBy } from 'firebase/firestore';
+import { useFirestoreCollection } from '../../hooks/useFirestoreCollection';
 
 interface CompraImpulso {
   id: string;
@@ -18,27 +19,15 @@ const TEMPO_BLOQUEIO_MS = 72 * 60 * 60 * 1000;
 const AgenteSentinela: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: compras, loading } = useFirestoreCollection<CompraImpulso>('users', user?.uid || '--', 'quarantine', orderBy('dataAdicao', 'desc'));
 
   const [valorHora, setValorHora] = useState<number>(25);
   const [currentTime, setCurrentTime] = useState<number>(() => Date.now());
-  const [compras, setCompras] = useState<CompraImpulso[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [novoProduto, setNovoProduto] = useState('');
   const [novoValor, setNovoValor] = useState('');
   const [novoLink, setNovoLink] = useState('');
   const [erro, setErro] = useState('');
-
-  useEffect(() => {
-    if (!user?.uid) return;
-    const ref = collection(db, 'users', user.uid, 'quarantine');
-    const q = query(ref, orderBy('dataAdicao', 'desc'));
-    const unsub = onSnapshot(q, (snap) => {
-      setCompras(snap.docs.map(d => ({ id: d.id, ...d.data() } as CompraImpulso)));
-      setLoading(false);
-    });
-    return () => unsub();
-  }, [user]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
