@@ -21,6 +21,7 @@ export interface UserProfile {
   preferences: {
     dopamineMode: boolean;
   };
+  purchasedCourses?: string[]; // Array of course IDs purchased by the user
 }
 
 export interface SupportTicket {
@@ -43,6 +44,43 @@ export interface AgentInfo {
   path: string;
   icon: string;
   needs: string[];
+}
+
+export interface CourseLesson {
+  id: string;
+  title: string;
+  duration: string;
+  pandaVideoUrl: string; // Full embed URL from Panda Video dashboard
+  isFree: boolean;
+  order: number;
+}
+
+export interface CourseModule {
+  id: string;
+  title: string;
+  lessons: CourseLesson[];
+  order: number;
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  longDescription: string;
+  price: number; // Price in cents (e.g., 2990 for R$29.90)
+  duration: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  instructor: string;
+  instructorBio?: string;
+  thumbnailUrl?: string;
+  previewVideoUrl?: string; // Panda Video embed URL for trailer/preview
+  modules: CourseModule[];
+  tags: string[];
+  totalLessons: number;
+  isFeatured: boolean;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export const AGENTS_INFO: AgentInfo[] = [

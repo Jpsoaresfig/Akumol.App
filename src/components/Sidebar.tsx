@@ -1,13 +1,14 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  LogOut, 
-  ShieldCheck, 
+import {
+  Home,
+  LogOut,
+  ShieldCheck,
   MessageSquareText,
   TrendingUp,
   LifeBuoy,
   Target,
-  Crown
+  Crown,
+  GraduationCap
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -22,6 +23,7 @@ const Sidebar = () => {
     { icon: Target, label: 'Metas', path: '/goals' },
     { icon: MessageSquareText, label: 'Conselheiro', path: '/conselheiro', main: true },
     { icon: ShieldCheck, label: 'Agentes', path: '/agentes' },
+    { icon: GraduationCap, label: 'Cursos', path: '/cursos' },
   ];
 
   const isActive = (path: string) => location.pathname === path;

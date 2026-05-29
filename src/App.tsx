@@ -22,6 +22,9 @@ const Profile = lazy(() => import('./pages/login/Profile'));
 const Goals = lazy(() => import('./pages/goals/Goals'));
 const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
 const Plans = lazy(() => import('./pages/plans/Plans'));
+const Courses = lazy(() => import('./pages/courses/Courses'));
+const CourseDetail = lazy(() => import('./pages/courses/CourseDetail'));
+const CourseWatch = lazy(() => import('./pages/courses/CourseWatch'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center py-24">
@@ -140,10 +143,17 @@ function App() {
                 element={user && user.plan === 'ultimate' ? <AgenteResiliencia /> : <Navigate to="/agentes" replace />}
               />
 
+              <Route path="/cursos" element={<Courses />} />
+              <Route path="/cursos/:id" element={<CourseDetail />} />
               <Route path="/conselheiro" element={<Conselheiro />} />
               <Route path="/suporte" element={<Support />} />
             </Route>
           </Route>
+
+          <Route
+            path="/cursos/:id/assistir"
+            element={user ? <CourseWatch /> : <Navigate to="/login" replace />}
+          />
 
           <Route
             path="/admin"

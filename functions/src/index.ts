@@ -219,6 +219,70 @@ export const createCheckoutSession = onCall({ cors: true }, async (request) => {
   }
 });
 
+export const createCoursePurchaseSession = onCall({ cors: true }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Você precisa estar logado.");
+  }
+  if (!stripe) {
+    throw new HttpsError("internal", "Stripe não configurado. Configure STRIPE_SECRET_KEY.");
+  }
+
+  const { courseId } = request.data;
+  if (!courseId || typeof courseId !== "string") {
+    throw new HttpsError("invalid-argument", "ID do curso inválido.");
+  }
+
+  const courseDoc = await db.collection("courses").doc(courseId).get();
+  if (!courseDoc.exists) {
+    throw new HttpsError("not-found", "Curso não encontrado.");
+  }
+
+  const course = courseDoc.data()!;
+  if (!course.isActive) {
+    throw new HttpsError("failed-precondition", "Este curso não está disponível para compra.");
+  }
+
+  if (typeof course.price !== "number" || course.price <= 0) {
+    throw new HttpsError("failed-precondition", "Este curso é gratuito e não requer pagamento.");
+  }
+
+  const userDoc = await db.collection("users").doc(request.auth.uid).get();
+  const alreadyPurchased = (userDoc.data()?.purchasedCourses || []).includes(courseId);
+  if (alreadyPurchased) {
+    throw new HttpsError("already-exists", "Você já adquiriu este curso.");
+  }
+
+  const origin = request.rawRequest?.headers?.origin || "http://localhost:5173";
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [{
+        price_data: {
+          currency: "brl",
+          product_data: {
+            name: course.title || "Curso Akumol",
+            description: course.description || "",
+            ...(course.thumbnailUrl ? { images: [course.thumbnailUrl] } : {}),
+          },
+          unit_amount: course.price,
+        },
+        quantity: 1,
+      }],
+      client_reference_id: request.auth.uid,
+      metadata: { type: "course", courseId, userId: request.auth.uid },
+      success_url: `${origin}/cursos/${courseId}?purchase=success`,
+      cancel_url: `${origin}/cursos/${courseId}?purchase=canceled`,
+    });
+
+    return { url: session.url };
+  } catch (error: unknown) {
+    logger.error("Stripe course checkout error", error);
+    throw new HttpsError("internal", "Erro ao criar sessão de checkout.");
+  }
+});
+
 export const stripeWebhook = onRequest({ cors: true }, async (req, res) => {
   if (!stripe) {
     res.status(500).json({ error: "Stripe não configurado." });
@@ -248,11 +312,22 @@ export const stripeWebhook = onRequest({ cors: true }, async (req, res) => {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     const userId = session.metadata?.userId;
-    const plan = session.metadata?.plan;
+    const type = session.metadata?.type;
 
-    if (userId && plan) {
-      await db.collection("users").doc(userId).update({ plan });
-      logger.info(`User ${userId} upgraded to ${plan} via Stripe`);
+    if (type === "course") {
+      const courseId = session.metadata?.courseId;
+      if (userId && courseId) {
+        await db.collection("users").doc(userId).update({
+          purchasedCourses: admin.firestore.FieldValue.arrayUnion(courseId),
+        });
+        logger.info(`User ${userId} purchased course ${courseId}`);
+      }
+    } else {
+      const plan = session.metadata?.plan;
+      if (userId && plan) {
+        await db.collection("users").doc(userId).update({ plan });
+        logger.info(`User ${userId} upgraded to ${plan} via Stripe`);
+      }
     }
   }
 

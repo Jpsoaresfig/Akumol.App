@@ -9,9 +9,10 @@ import {
   Users, LayoutDashboard, LogOut, ShieldAlert, ShieldCheck,
   Search, X, MessageSquare, Bot, Eye, EyeOff, Save,
   CheckCircle2, AlertCircle, Circle, Zap, Target,
-  HeartPulse, Brain, RefreshCw, KeyRound
+  HeartPulse, Brain, RefreshCw, KeyRound, GraduationCap
 } from 'lucide-react';
 import type { UserProfile, PlanLevel, SupportTicket } from '../types';
+import AdminCourses from './courses/AdminCourses';
 
 interface AgentsConfig {
   geminiApiKey: string;
@@ -122,7 +123,7 @@ const NeedsBadge = ({ type }: { type: string }) => {
 
 const planLevels: PlanLevel[] = ['basic', 'premium', 'plus', 'ultimate'];
 
-type Tab = 'overview' | 'users' | 'tickets' | 'agents';
+type Tab = 'overview' | 'users' | 'tickets' | 'agents' | 'courses';
 
 const AdminPanel: React.FC = () => {
   const { logout, user: adminUser } = useAuth();
@@ -255,6 +256,7 @@ const AdminPanel: React.FC = () => {
     { id: 'users', label: 'Usuários', icon: <Users size={16} /> },
     { id: 'tickets', label: 'Reportes', icon: <MessageSquare size={16} /> },
     { id: 'agents', label: 'Agentes', icon: <Bot size={16} /> },
+    { id: 'courses', label: 'Cursos', icon: <GraduationCap size={16} /> },
   ];
 
   return (
@@ -463,6 +465,9 @@ const AdminPanel: React.FC = () => {
                     ))}
                   </div>
                 )}
+
+                {/* ── COURSES ── */}
+                {activeTab === 'courses' && <AdminCourses />}
 
                 {/* ── AGENTS ── */}
                 {activeTab === 'agents' && (
